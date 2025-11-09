@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 // POST /api/playlists/[id]/mixes - Add mix to playlist
@@ -73,7 +74,7 @@ export async function POST(
       );
     }
 
-    console.error("Failed to add mix to playlist:", error);
+    logError(error, { operation: "add_mix_to_playlist", playlistId: (await params).id });
     return NextResponse.json(
       { error: "Failed to add mix to playlist" },
       { status: 500 }
@@ -127,7 +128,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to remove mix from playlist:", error);
+    logError(error, { operation: "remove_mix_from_playlist", playlistId: (await params).id });
     return NextResponse.json(
       { error: "Failed to remove mix from playlist" },
       { status: 500 }

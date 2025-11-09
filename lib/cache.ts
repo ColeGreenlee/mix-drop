@@ -1,11 +1,12 @@
 import Redis from "ioredis";
+import { logger, logError } from "./logger";
 
 let redis: Redis | null = null;
 
 // Initialize Redis client
 function getRedisClient(): Redis | null {
   if (!process.env.REDIS_URL) {
-    console.warn("REDIS_URL not configured, caching disabled");
+    logger.warn("REDIS_URL not configured, caching disabled");
     return null;
   }
 
@@ -15,7 +16,7 @@ function getRedisClient(): Redis | null {
         maxRetriesPerRequest: 3,
         retryStrategy(times) {
           if (times > 3) {
-            console.error("Redis connection failed after 3 retries");
+            logger.error("Redis connection failed after 3 retries");
             return null; // Stop retrying
           }
           return Math.min(times * 100, 3000);
@@ -23,14 +24,14 @@ function getRedisClient(): Redis | null {
       });
 
       redis.on("error", (err) => {
-        console.error("Redis error:", err);
+        logError(err, { component: "redis", event: "error" });
       });
 
       redis.on("connect", () => {
-        console.log("Redis connected");
+        logger.info({ component: "redis", event: "connect" }, "Redis connected");
       });
     } catch (error) {
-      console.error("Failed to initialize Redis:", error);
+      logError(error, { component: "redis", event: "init_failed" });
       return null;
     }
   }
@@ -47,9 +48,11 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 
   try {
     const value = await client.get(key);
+    const hit = value !== null;
+    logger.debug({ cache: { operation: "get", key, hit } }, `Cache get: ${key} (${hit ? "HIT" : "MISS"})`);
     return value ? JSON.parse(value) : null;
   } catch (error) {
-    console.error(`Cache get error for key ${key}:`, error);
+    logError(error, { cache: { operation: "get", key } });
     return null;
   }
 }
@@ -72,8 +75,9 @@ export async function cacheSet(
     } else {
       await client.set(key, stringValue);
     }
+    logger.debug({ cache: { operation: "set", key, ttl } }, `Cache set: ${key}${ttl ? ` (TTL: ${ttl}s)` : ""}`);
   } catch (error) {
-    console.error(`Cache set error for key ${key}:`, error);
+    logError(error, { cache: { operation: "set", key, ttl } });
   }
 }
 
@@ -86,8 +90,9 @@ export async function cacheDelete(key: string): Promise<void> {
 
   try {
     await client.del(key);
+    logger.debug({ cache: { operation: "delete", key } }, `Cache delete: ${key}`);
   } catch (error) {
-    console.error(`Cache delete error for key ${key}:`, error);
+    logError(error, { cache: { operation: "delete", key } });
   }
 }
 
@@ -102,9 +107,10 @@ export async function cacheDeletePattern(pattern: string): Promise<void> {
     const keys = await client.keys(pattern);
     if (keys.length > 0) {
       await client.del(...keys);
+      logger.debug({ cache: { operation: "delete_pattern", pattern, count: keys.length } }, `Cache delete pattern: ${pattern} (${keys.length} keys)`);
     }
   } catch (error) {
-    console.error(`Cache delete pattern error for ${pattern}:`, error);
+    logError(error, { cache: { operation: "delete_pattern", pattern } });
   }
 }
 

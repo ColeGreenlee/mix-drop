@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { createAuditLog, AUDIT_ACTIONS } from "@/lib/audit";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 // GET /api/admin/users/[id] - Get user details
@@ -40,7 +41,7 @@ export async function GET(
       storageUsed: storageResult._sum.fileSize || 0,
     });
   } catch (error) {
-    console.error("Failed to fetch user:", error);
+    logError(error, { operation: "fetch_user_details", userId: (await params).id });
     return NextResponse.json(
       { error: "Failed to fetch user" },
       { status: 500 }
@@ -114,7 +115,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error("Failed to update user:", error);
+    logError(error, { operation: "update_user", userId: (await params).id });
     return NextResponse.json(
       { error: "Failed to update user" },
       { status: 500 }
@@ -168,7 +169,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to delete user:", error);
+    logError(error, { operation: "delete_user", userId: (await params).id });
     return NextResponse.json(
       { error: "Failed to delete user" },
       { status: 500 }

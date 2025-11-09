@@ -1,0 +1,22 @@
+{
+    "mcpServers": {
+        "chrome-devtools": {
+            "command": "pnpm",
+            "args": [
+                "dlx",
+                "chrome-devtools-mcp@latest"
+            ],
+            "env": {}
+        },
+        "grafana": {
+            "command": "npx",
+            "args": [
+                "@leval/mcp-grafana"
+            ],
+            "env": {
+                "GRAFANA_URL": "http://localhost:3001",
+                "GRAFANA_SERVICE_ACCOUNT_TOKEN": "glsa_xxxxxxxxxxxx"
+            }
+        }
+    }
+}

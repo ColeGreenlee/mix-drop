@@ -1,0 +1,117 @@
+{
+  "title": "MixDrop - Upload Analytics",
+    "uid": "mixdrop-uploads",
+    "tags": ["mixdrop", "uploads"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "1m",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Upload Success Rate",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(count_over_time({service=\"app\"} |= \"upload_mix\" |~ \"level.*info\" [1h])) / sum(count_over_time({service=\"app\"} |= \"upload_mix\" [1h])) * 100",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 80, "color": "yellow" },
+                { "value": 95, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Uploads Over Time",
+        "type": "timeseries",
+        "gridPos": { "x": 8, "y": 0, "w": 16, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Uploading\" [5m]))",
+            "refId": "A",
+            "legendFormat": "Upload Attempts",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          },
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"upload_mix\" |~ \"level.*info\" [5m]))",
+            "refId": "B",
+            "legendFormat": "Successful Uploads",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Upload Errors",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 10 },
+        "targets": [
+          {
+            "expr": "{service=\"app\"} |= \"upload_mix\" |~ \"level.*error\"",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {}
+            }
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Recent Successful Uploads",
+        "type": "logs",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 10 },
+        "targets": [
+          {
+            "expr": "{service=\"app\"} |= \"Uploading\" |~ \"level.*info\"",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "enableLogDetails": true,
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Rate Limit Hits",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 18, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Rate limit exceeded\" [1m]))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": { "fillOpacity": 30 }
+          }
+        }
+      }
+    ]
+}

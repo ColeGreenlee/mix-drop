@@ -1,0 +1,136 @@
+{
+  "title": "MixDrop - Error Monitoring",
+    "uid": "mixdrop-errors",
+    "tags": ["mixdrop", "errors", "debugging"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "1m",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Error Count (Last Hour)",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(count_over_time({service=\"app\"} |~ \"level.*error\" [1h]))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 10, "color": "yellow" },
+                { "value": 50, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Warning Count (Last Hour)",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(count_over_time({service=\"app\"} |~ \"level.*warn\" [1h]))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 20, "color": "yellow" },
+                { "value": 100, "color": "orange" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate Over Time",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate({service=\"app\"} |~ \"level.*error\" [1m]))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": { "fillOpacity": 20, "lineWidth": 2 }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Errors by Operation",
+        "type": "bargauge",
+        "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (context) (count_over_time({service=\"app\"} | json | level=\"error\" | context != \"\" [1h]))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient",
+          "showUnfilled": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "Top 10 Error Messages",
+        "type": "table",
+        "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "topk(10, sum by (msg) (count_over_time({service=\"app\"} | json | level=\"error\" [1h])))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Recent Error Logs",
+        "type": "logs",
+        "gridPos": { "x": 0, "y": 14, "w": 24, "h": 12 },
+        "targets": [
+          {
+            "expr": "{service=\"app\"} |~ \"level.*(error|warn)\"",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "showCommonLabels": false,
+          "wrapLogMessage": true,
+          "prettifyLogMessage": true,
+          "enableLogDetails": true,
+          "dedupStrategy": "none",
+          "sortOrder": "Descending"
+        }
+      }
+    ]
+}

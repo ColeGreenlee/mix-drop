@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
+import { logger, logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 // GET /api/playlists - List playlists (user's own + public ones)
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ playlists });
   } catch (error) {
-    console.error("Failed to fetch playlists:", error);
+    logError(error, { operation: "fetch_playlists" });
     return NextResponse.json(
       { error: "Failed to fetch playlists" },
       { status: 500 }
@@ -103,9 +104,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    logger.info(
+      { playlist: { id: playlist.id, name, isPublic } },
+      "Playlist created successfully"
+    );
+
     return NextResponse.json({ success: true, playlist });
   } catch (error) {
-    console.error("Failed to create playlist:", error);
+    logError(error, { operation: "create_playlist" });
     return NextResponse.json(
       { error: "Failed to create playlist" },
       { status: 500 }

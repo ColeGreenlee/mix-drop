@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 // GET /api/playlists/[id] - Get playlist with mixes
@@ -53,7 +54,7 @@ export async function GET(
 
     return NextResponse.json(playlist);
   } catch (error) {
-    console.error("Failed to fetch playlist:", error);
+    logError(error, { operation: "fetch_playlist", playlistId: (await params).id });
     return NextResponse.json(
       { error: "Failed to fetch playlist" },
       { status: 500 }
@@ -100,7 +101,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedPlaylist);
   } catch (error) {
-    console.error("Failed to update playlist:", error);
+    logError(error, { operation: "update_playlist", playlistId: (await params).id });
     return NextResponse.json(
       { error: "Failed to update playlist" },
       { status: 500 }
@@ -140,7 +141,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to delete playlist:", error);
+    logError(error, { operation: "delete_playlist", playlistId: (await params).id });
     return NextResponse.json(
       { error: "Failed to delete playlist" },
       { status: 500 }

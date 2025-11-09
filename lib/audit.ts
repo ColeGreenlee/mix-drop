@@ -1,4 +1,5 @@
 import prisma from "./prisma";
+import { logger, logError } from "./logger";
 
 /**
  * Audit logging utility for admin actions
@@ -19,8 +20,9 @@ export async function createAuditLog(
         details: details ? JSON.stringify(details) : null,
       },
     });
+    logger.info({ audit: { action, actorId, targetId, details } }, `Audit: ${action}`);
   } catch (error) {
-    console.error("Failed to create audit log:", error);
+    logError(error, { audit: { action, actorId, targetId } });
     // Don't throw - audit logging failure shouldn't break the actual operation
   }
 }

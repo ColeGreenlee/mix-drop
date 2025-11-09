@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { createAuditLog, AUDIT_ACTIONS } from "@/lib/audit";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 // GET /api/admin/settings - Get all settings
@@ -27,7 +28,7 @@ export async function GET() {
 
     return NextResponse.json({ settings: settingsObject, raw: settings });
   } catch (error) {
-    console.error("Failed to fetch settings:", error);
+    logError(error, { operation: "fetch_settings" });
     return NextResponse.json(
       { error: "Failed to fetch settings" },
       { status: 500 }
@@ -69,7 +70,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, updated: results });
   } catch (error) {
-    console.error("Failed to update settings:", error);
+    logError(error, { operation: "update_settings" });
     return NextResponse.json(
       { error: "Failed to update settings" },
       { status: 500 }

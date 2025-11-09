@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 export async function GET(
@@ -37,7 +38,7 @@ export async function GET(
       filename,
     });
   } catch (error) {
-    console.error("Failed to generate download URL:", error);
+    logError(error, { operation: "generate_download_url", mixId: (await params).id });
     return NextResponse.json(
       { error: "Failed to generate download URL" },
       { status: 500 }

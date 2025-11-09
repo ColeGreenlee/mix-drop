@@ -74,6 +74,60 @@ services:
       exit 0;
       "
 
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: mixdrop-loki-prod
+    ports:
+      - "127.0.0.1:3100:3100"  # Only expose to localhost
+    volumes:
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/tmp/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Promtail - Log collector
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: mixdrop-promtail-prod
+    volumes:
+      - ./config/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    depends_on:
+      - loki
+
+  # Grafana - Observability UI
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: mixdrop-grafana-prod
+    ports:
+      - "127.0.0.1:3001:3000"  # Only expose to localhost (use reverse proxy)
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
+      - GF_SECURITY_SECRET_KEY=${GRAFANA_SECRET_KEY}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    restart: unless-stopped
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Next.js Application
   app:
     image: ghcr.io/colegreenlee/mix-drop:latest
@@ -124,6 +178,8 @@ services:
         condition: service_healthy
       minio-setup:
         condition: service_completed_successfully
+      loki:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
@@ -131,6 +187,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    labels:
+      - "com.docker.compose.project=mix-drop"
 
 volumes:
   postgres_data:
@@ -138,6 +196,10 @@ volumes:
   redis_data:
     driver: local
   minio_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:

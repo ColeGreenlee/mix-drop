@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 export async function GET(
@@ -32,7 +33,7 @@ export async function GET(
     const url = `${process.env.S3_PUBLIC_ENDPOINT}/${process.env.S3_BUCKET}/${mix.storageKey}`;
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Failed to generate stream URL:", error);
+    logError(error, { operation: "generate_stream_url", mixId: (await params).id });
     return NextResponse.json(
       { error: "Failed to generate stream URL" },
       { status: 500 }

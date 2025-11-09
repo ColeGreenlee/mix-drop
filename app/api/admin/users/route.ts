@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Failed to fetch users:", error);
+    logError(error, { operation: "fetch_users" });
     return NextResponse.json(
       { error: "Failed to fetch users" },
       { status: 500 }

@@ -1,0 +1,124 @@
+{
+  "title": "MixDrop - Cache Performance",
+    "uid": "mixdrop-cache",
+    "tags": ["mixdrop", "cache", "redis"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(count_over_time({service=\"app\"} |= \"Cache get\" |= \"HIT\" [5m])) / sum(count_over_time({service=\"app\"} |= \"Cache get\" [5m])) * 100",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 50, "color": "yellow" },
+                { "value": 80, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Cache Operations (per minute)",
+        "type": "timeseries",
+        "gridPos": { "x": 8, "y": 0, "w": 16, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Cache get\" [1m]))",
+            "refId": "A",
+            "legendFormat": "Get Operations",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          },
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Cache set\" [1m]))",
+            "refId": "B",
+            "legendFormat": "Set Operations",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          },
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Cache delete\" [1m]))",
+            "refId": "C",
+            "legendFormat": "Delete Operations",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Cache Hit vs Miss",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Cache get\" |= \"HIT\" [1m]))",
+            "refId": "A",
+            "legendFormat": "Hits",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          },
+          {
+            "expr": "sum(rate({service=\"app\"} |= \"Cache get\" |= \"MISS\" [1m]))",
+            "refId": "B",
+            "legendFormat": "Misses",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 50
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Redis Connection Status",
+        "type": "logs",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "{service=\"app\"} |~ \"Redis (connected|error|failed)\"",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "enableLogDetails": true,
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Cache Errors",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "expr": "{service=\"app\"} |= \"cache\" |~ \"level.*error\"",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" }
+          }
+        ]
+      }
+    ]
+}

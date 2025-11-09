@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { cacheGet, cacheSet, CacheKeys } from "@/lib/cache";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Failed to fetch mixes:", error);
+    logError(error, { operation: "fetch_mixes" });
     return NextResponse.json(
       { error: "Failed to fetch mixes" },
       { status: 500 }

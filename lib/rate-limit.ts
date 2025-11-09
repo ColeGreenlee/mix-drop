@@ -1,5 +1,6 @@
 import { cacheGet, cacheSet } from "./cache";
 import { RATE_LIMITS } from "./constants";
+import { logError, logRateLimit } from "./logger";
 
 interface RateLimitResult {
   success: boolean;
@@ -42,6 +43,7 @@ export async function checkRateLimit(
 
     // Check if limit exceeded
     if (current.count >= limit.MAX_REQUESTS) {
+      logRateLimit(action, false, 0, { userId });
       return {
         success: false,
         remaining: 0,
@@ -63,7 +65,7 @@ export async function checkRateLimit(
       reset: current.resetAt,
     };
   } catch (error) {
-    console.error("Rate limit check failed:", error);
+    logError(error, { rateLimit: { action, userId } });
     // On error, allow the request (fail open)
     return {
       success: true,

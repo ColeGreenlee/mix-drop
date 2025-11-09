@@ -56,10 +56,12 @@ Available image tags:
 | Service | Port | Purpose | Credentials |
 |---------|------|---------|-------------|
 | MixDrop App | 3000 | Main application | N/A |
+| Grafana | 3001 | Observability dashboards | Anonymous (dev) / admin (prod) |
 | MinIO API | 9000 | S3-compatible storage | minioadmin / minioadmin |
 | MinIO Console | 9001 | Storage management UI | minioadmin / minioadmin |
 | Mock OAuth | 8080 | Authentication (dev only) | Any credentials work |
 | Redis | 6379 | Caching layer | No auth (localhost only) |
+| Loki | 3100 | Log aggregation | No auth (internal) |
 
 ## Prerequisites
 
@@ -116,6 +118,8 @@ Required production environment variables:
 - `NEXTAUTH_URL` - Your public URL (e.g., `https://mixdrop.yourdomain.com`)
 - `OAUTH_*` - Your production OAuth provider credentials
 - `S3_*` - Your production S3 credentials (AWS S3 or other)
+- `GRAFANA_ADMIN_PASSWORD` - Grafana admin password (generate with `openssl rand -base64 32`)
+- `GRAFANA_SECRET_KEY` - Grafana encryption key (generate with `openssl rand -base64 32`)
 
 **Step 2: Deploy with Docker Compose**
 
@@ -219,6 +223,11 @@ sudo certbot --nginx -d mixdrop.yourdomain.com
 | `OAUTH_AUTHORIZATION_URL` | ✅ | OAuth provider's authorize endpoint | Full authorization URL |
 | `OAUTH_TOKEN_URL` | ✅ | OAuth provider's token endpoint | Full token exchange URL |
 | `OAUTH_USERINFO_URL` | ✅ | OAuth provider's userinfo endpoint | Full user info URL |
+| `LOG_LEVEL` | ❌ | `debug` (dev) / `info` (prod) | Logging verbosity: debug, info, warn, error |
+| `GRAFANA_ADMIN_PASSWORD` | ✅ (prod) | `admin` (dev only) | Grafana dashboard admin password |
+| `GRAFANA_ADMIN_USER` | ❌ | `admin` | Grafana admin username |
+| `GRAFANA_SECRET_KEY` | ✅ (prod) | Auto-generated | Grafana encryption secret |
+| `GRAFANA_ROOT_URL` | ❌ | `http://localhost:3001` | Public URL for Grafana (if exposed) |
 
 ### OAuth Provider Setup
 
@@ -266,6 +275,204 @@ mc mirror local/mixdrop remote/mixdrop-backup
 ```
 
 
+## Observability & Monitoring
+
+MixDrop includes a complete observability stack powered by **Grafana Loki** for centralized logging and **Grafana** for visualization.
+
+### Architecture
+
+- **Structured Logging** - Pino-based JSON logging with request correlation
+- **Log Aggregation** - Loki collects all application logs
+- **Log Shipping** - Promtail automatically ships Docker logs to Loki
+- **Visualization** - Grafana provides pre-built dashboards
+- **Retention** - 7-day log retention (configurable)
+
+### Quick Start
+
+The observability stack is included in both development and production docker-compose files:
+
+```bash
+# Development
+docker-compose up -d
+
+# Production
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Access Grafana:**
+- Development: http://localhost:3001
+- Production: http://localhost:3001 (expose via reverse proxy)
+
+**Default Credentials:**
+- Development: Anonymous access enabled (no login required)
+- Production: admin / `$GRAFANA_ADMIN_PASSWORD` (set in .env.production)
+
+### Services & Ports
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Grafana | 3001 | Dashboards and visualization |
+| Loki | 3100 | Log aggregation backend |
+| Promtail | - | Log collector (no exposed port) |
+
+### Pre-built Dashboards
+
+MixDrop includes 5 production-ready Grafana dashboards:
+
+1. **Application Overview** (`/d/mixdrop-overview`)
+   - Request rates and error rates
+   - HTTP methods distribution
+   - Response status codes
+   - Recent application logs
+
+2. **Upload Analytics** (`/d/mixdrop-uploads`)
+   - Upload success/failure rates
+   - Upload trends over time
+   - Upload errors breakdown
+   - Rate limit monitoring
+
+3. **Cache Performance** (`/d/mixdrop-cache`)
+   - Cache hit/miss ratios
+   - Cache operation rates
+   - Redis connection health
+   - Cache-related errors
+
+4. **Error Monitoring** (`/d/mixdrop-errors`)
+   - Error and warning counts
+   - Error rates over time
+   - Errors grouped by operation
+   - Detailed error logs
+
+5. **Database Performance** (`/d/mixdrop-database`)
+   - Query rates and counts
+   - Slow query detection (>100ms)
+   - Database errors and warnings
+   - Query distribution by model
+
+### Structured Logging
+
+All application logs are structured JSON with contextual information:
+
+**Log Levels:**
+- `error` - Errors and exceptions
+- `warn` - Warnings and anomalies
+- `info` - Important events (uploads, auth, operations)
+- `debug` - Detailed debugging (queries, cache ops)
+
+**Log Context:**
+Every log entry includes:
+- `requestId` - Unique ID for request tracing
+- `userId` - User performing the action (when applicable)
+- `timestamp` - ISO 8601 timestamp
+- `level` - Log severity level
+- Operation-specific context (mixId, cacheKey, queryDuration, etc.)
+
+**Example Queries in Grafana:**
+
+```logql
+# View all errors in the last hour
+{service="app"} |~ "level.*error"
+
+# Find slow database queries (>100ms)
+{service="app"} |= "DB Query" | json | duration > 100
+
+# Track specific user's actions
+{service="app"} | json | userId="user-123"
+
+# Monitor upload success rate
+{service="app"} |= "upload_mix" |~ "level.*info"
+
+# Cache hit ratio
+{service="app"} |= "Cache get" |= "HIT"
+```
+
+### Configuration
+
+**Log Level:**
+Set `LOG_LEVEL` environment variable:
+```bash
+# Development - verbose logging
+LOG_LEVEL=debug
+
+# Production - important events only
+LOG_LEVEL=info
+```
+
+**Log Retention:**
+Edit `config/loki-config.yml` to adjust retention:
+```yaml
+limits_config:
+  retention_period: 168h  # 7 days
+```
+
+**Grafana Authentication (Production):**
+Set in `.env.production`:
+```bash
+GRAFANA_ADMIN_PASSWORD=your-secure-password
+GRAFANA_ADMIN_USER=admin
+GRAFANA_SECRET_KEY=$(openssl rand -base64 32)
+GRAFANA_ROOT_URL=https://grafana.yourdomain.com
+```
+
+### Exposing Grafana (Production)
+
+**Option A: Reverse Proxy (Recommended)**
+
+Add to your Caddy or Nginx configuration:
+
+```caddy
+# Caddyfile
+grafana.yourdomain.com {
+    reverse_proxy localhost:3001
+}
+```
+
+```nginx
+# nginx.conf
+server {
+    listen 443 ssl;
+    server_name grafana.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+**Option B: Direct Access (Development Only)**
+
+For development, Grafana is accessible at `http://localhost:3001` with anonymous access enabled.
+
+### Advanced Usage
+
+**Custom Dashboards:**
+1. Create dashboards in Grafana UI
+2. Export JSON via Settings → JSON Model
+3. Save to `config/grafana/dashboards/`
+4. Restart Grafana to load
+
+**Alert Rules:**
+Add LogQL alert rules in Grafana:
+- High error rates
+- Upload failures
+- Database slow queries
+- Cache miss spikes
+
+**Log Filtering:**
+Use LogQL to filter logs by any field:
+```logql
+# Specific operation
+{service="app"} | json | operation="fetch_mixes"
+
+# Status code range
+{service="app"} | json | statusCode >= 400
+
+# Multiple conditions
+{service="app"} | json | level="error" | context="upload_mix"
+```
+
 ## Monitoring & Maintenance
 
 ### Health Checks
@@ -285,6 +492,16 @@ redis-cli ping  # Should return PONG
 curl http://localhost:9000/minio/health/live
 ```
 
+**Check Loki:**
+```bash
+curl http://localhost:3100/ready
+```
+
+**Check Grafana:**
+```bash
+curl http://localhost:3001/api/health
+```
+
 ### Logs
 
 **View application logs:**
@@ -295,6 +512,11 @@ docker-compose logs -f app
 **View all service logs:**
 ```bash
 docker-compose logs -f
+```
+
+**View observability stack logs:**
+```bash
+docker-compose logs -f loki promtail grafana
 ```
 
 ### Database Maintenance

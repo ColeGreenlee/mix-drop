@@ -64,6 +64,57 @@ services:
       exit 0;
       "
 
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: mixdrop-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/tmp/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Promtail - Log collector
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: mixdrop-promtail
+    volumes:
+      - ./config/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  # Grafana - Observability UI
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: mixdrop-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Next.js App
   app:
     build:
@@ -90,6 +141,10 @@ services:
       - OAUTH_AUTHORIZATION_URL=http://localhost:8080/default/authorize
       - OAUTH_TOKEN_URL=http://host.docker.internal:8080/default/token
       - OAUTH_USERINFO_URL=http://host.docker.internal:8080/default/userinfo
+      - ENABLE_LOCAL_AUTH=true
+      - NEXT_PUBLIC_ENABLE_LOCAL_AUTH=true
+      - ADMIN_EMAILS=admin@mixdrop.local
+      - NODE_ENV=development
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -99,8 +154,13 @@ services:
       - mock-oauth
       - minio
       - minio-setup
+      - loki
+    labels:
+      - "com.docker.compose.project=mix-drop"
 
 volumes:
   redis_data:
   minio_data:
   app_data:
+  loki_data:
+  grafana_data:

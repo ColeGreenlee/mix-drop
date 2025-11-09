@@ -5,6 +5,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { logError } from "./logger";
 
 // Initialize S3 client with configuration from environment variables
 const s3Client = new S3Client({
@@ -83,7 +84,7 @@ export async function getPresignedUrl(
 
     return url;
   } catch (error) {
-    console.error("Error generating presigned URL:", error);
+    logError(error, { s3: { operation: "presign", key } });
     throw error;
   }
 }

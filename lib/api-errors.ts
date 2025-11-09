@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ERROR_MESSAGES } from "./constants";
+import { logError, getRequestId } from "./logger";
 
 /**
  * Centralized API error handling
@@ -11,8 +12,12 @@ export function handleApiError(
   context: string,
   statusCode: number = 500
 ): NextResponse {
-  // Log error with context
-  console.error(`[API Error - ${context}]`, error);
+  // Log error with context and request ID
+  logError(error, {
+    context,
+    statusCode,
+    requestId: getRequestId?.()
+  });
 
   // Return generic error to client (never expose internals)
   return NextResponse.json(

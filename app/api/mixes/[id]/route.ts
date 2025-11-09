@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { deleteFromS3 } from "@/lib/s3";
 import { cacheGet, cacheSet, cacheDelete, cacheDeletePattern, CacheKeys } from "@/lib/cache";
+import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
 // GET /api/mixes/[id] - Get single mix
@@ -41,7 +42,7 @@ export async function GET(
 
     return NextResponse.json(mix);
   } catch (error) {
-    console.error("Failed to fetch mix:", error);
+    logError(error, { operation: "fetch_mix", mixId: (await params).id });
     return NextResponse.json(
       { error: "Failed to fetch mix" },
       { status: 500 }
@@ -103,7 +104,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedMix);
   } catch (error) {
-    console.error("Failed to update mix:", error);
+    logError(error, { operation: "update_mix", mixId: (await params).id });
     return NextResponse.json(
       { error: "Failed to update mix" },
       { status: 500 }
@@ -154,7 +155,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to delete mix:", error);
+    logError(error, { operation: "delete_mix", mixId: (await params).id });
     return NextResponse.json(
       { error: "Failed to delete mix" },
       { status: 500 }

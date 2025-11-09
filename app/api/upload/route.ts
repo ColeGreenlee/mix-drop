@@ -5,6 +5,7 @@ import { uploadToS3, generateStorageKey } from "@/lib/s3";
 import { generateWaveformPeaks } from "@/lib/waveform";
 import { cacheDeletePattern } from "@/lib/cache";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger, logError } from "@/lib/logger";
 import {
   MAX_FILE_SIZES,
   ALLOWED_MIME_TYPES,
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
       const metadata = await parseBuffer(audioBuffer, { mimeType: audioFile.type });
       duration = Math.floor(metadata.format.duration || 0);
     } catch (error) {
-      console.error("Failed to extract audio duration:", error);
+      logError(error, { operation: "extract_audio_metadata", filename: audioFile.name });
       // Continue with duration = 0 rather than failing the upload
     }
 
@@ -173,12 +174,17 @@ export async function POST(req: NextRequest) {
     // Invalidate mixes list cache
     await cacheDeletePattern("mixes:list:*");
 
+    logger.info(
+      { upload: { mixId: mix.id, title, artist, fileSize: audioFile.size } },
+      "Mix uploaded successfully"
+    );
+
     return NextResponse.json({
       success: true,
       mix,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    logError(error, { operation: "upload_mix" });
     return NextResponse.json(
       { error: "Failed to upload mix" },
       { status: 500 }
