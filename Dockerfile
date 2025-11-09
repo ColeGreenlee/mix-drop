@@ -25,6 +25,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Accept build arguments for Next.js public env vars
+ARG NEXT_PUBLIC_ENABLE_LOCAL_AUTH=false
+ENV NEXT_PUBLIC_ENABLE_LOCAL_AUTH=$NEXT_PUBLIC_ENABLE_LOCAL_AUTH
+
 # Generate Prisma Client (with dummy DATABASE_URL for build)
 ENV DATABASE_URL="file:./dev.db"
 RUN pnpm prisma generate

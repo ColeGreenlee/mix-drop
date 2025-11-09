@@ -14,7 +14,7 @@
         "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "sum(rate({service=\"app\"} |= \"HTTP\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"HTTP\" [1m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -27,7 +27,7 @@
         "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "sum(rate({service=\"app\"} |~ \"level.*error\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |~ \"level.*error\" [1m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -46,7 +46,7 @@
         "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum by (method) (count_over_time({service=\"app\"} | json | method != \"\" [5m]))",
+            "expr": "sum by (method) (count_over_time({job=\"mixdrop\"} | json | method != \"\" [5m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -59,7 +59,7 @@
         "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum by (statusCode) (count_over_time({service=\"app\"} | json | statusCode != \"\" [5m]))",
+            "expr": "sum by (statusCode) (count_over_time({job=\"mixdrop\"} | json | statusCode != \"\" [5m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -76,7 +76,7 @@
         "gridPos": { "x": 0, "y": 16, "w": 24, "h": 12 },
         "targets": [
           {
-            "expr": "{service=\"app\"}",
+            "expr": "{job=\"mixdrop\"}",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }

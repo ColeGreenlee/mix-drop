@@ -14,7 +14,7 @@
         "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
         "targets": [
           {
-            "expr": "sum(count_over_time({service=\"app\"} |~ \"level.*error\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |~ \"level.*error\" [1h]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -40,7 +40,7 @@
         "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
         "targets": [
           {
-            "expr": "sum(count_over_time({service=\"app\"} |~ \"level.*warn\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |~ \"level.*warn\" [1h]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -66,7 +66,7 @@
         "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
         "targets": [
           {
-            "expr": "sum(rate({service=\"app\"} |~ \"level.*error\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |~ \"level.*error\" [1m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -85,7 +85,7 @@
         "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "sum by (context) (count_over_time({service=\"app\"} | json | level=\"error\" | context != \"\" [1h]))",
+            "expr": "sum by (context) (count_over_time({job=\"mixdrop\"} | json | level=\"error\" | context != \"\" [1h]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -103,7 +103,7 @@
         "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "topk(10, sum by (msg) (count_over_time({service=\"app\"} | json | level=\"error\" [1h])))",
+            "expr": "topk(10, sum by (msg) (count_over_time({job=\"mixdrop\"} | json | level=\"error\" [1h])))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -116,7 +116,7 @@
         "gridPos": { "x": 0, "y": 14, "w": 24, "h": 12 },
         "targets": [
           {
-            "expr": "{service=\"app\"} |~ \"level.*(error|warn)\"",
+            "expr": "{job=\"mixdrop\"} |~ \"level.*(error|warn)\"",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }

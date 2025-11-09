@@ -14,7 +14,7 @@
         "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({service=\"app\"} |= \"Cache get\" |= \"HIT\" [5m])) / sum(count_over_time({service=\"app\"} |= \"Cache get\" [5m])) * 100",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"Cache get\" |= \"HIT\" [5m])) / sum(count_over_time({job=\"mixdrop\"} |= \"Cache get\" [5m])) * 100",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -42,19 +42,19 @@
         "gridPos": { "x": 8, "y": 0, "w": 16, "h": 8 },
         "targets": [
           {
-            "expr": "sum(rate({service=\"app\"} |= \"Cache get\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache get\" [1m]))",
             "refId": "A",
             "legendFormat": "Get Operations",
             "datasource": { "type": "loki", "uid": "Loki" }
           },
           {
-            "expr": "sum(rate({service=\"app\"} |= \"Cache set\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache set\" [1m]))",
             "refId": "B",
             "legendFormat": "Set Operations",
             "datasource": { "type": "loki", "uid": "Loki" }
           },
           {
-            "expr": "sum(rate({service=\"app\"} |= \"Cache delete\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache delete\" [1m]))",
             "refId": "C",
             "legendFormat": "Delete Operations",
             "datasource": { "type": "loki", "uid": "Loki" }
@@ -68,13 +68,13 @@
         "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "sum(rate({service=\"app\"} |= \"Cache get\" |= \"HIT\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache get\" |= \"HIT\" [1m]))",
             "refId": "A",
             "legendFormat": "Hits",
             "datasource": { "type": "loki", "uid": "Loki" }
           },
           {
-            "expr": "sum(rate({service=\"app\"} |= \"Cache get\" |= \"MISS\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache get\" |= \"MISS\" [1m]))",
             "refId": "B",
             "legendFormat": "Misses",
             "datasource": { "type": "loki", "uid": "Loki" }
@@ -96,7 +96,7 @@
         "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "{service=\"app\"} |~ \"Redis (connected|error|failed)\"",
+            "expr": "{job=\"mixdrop\"} |~ \"Redis (connected|error|failed)\"",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -114,7 +114,7 @@
         "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
         "targets": [
           {
-            "expr": "{service=\"app\"} |= \"cache\" |~ \"level.*error\"",
+            "expr": "{job=\"mixdrop\"} |= \"cache\" |~ \"level.*error\"",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }

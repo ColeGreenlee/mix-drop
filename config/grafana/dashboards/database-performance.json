@@ -14,7 +14,7 @@
         "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "sum(rate({service=\"app\"} |= \"DB Query\" [1m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"DB Query\" [1m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -33,7 +33,7 @@
         "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({service=\"app\"} |= \"DB Error\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"DB Error\" [1h]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -59,7 +59,7 @@
         "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({service=\"app\"} |= \"DB Warning\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"DB Warning\" [1h]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -85,7 +85,7 @@
         "gridPos": { "x": 0, "y": 8, "w": 12, "h": 10 },
         "targets": [
           {
-            "expr": "{service=\"app\"} |= \"DB Query\" | json | duration > 100",
+            "expr": "{job=\"mixdrop\"} |= \"DB Query\" | json | duration > 100",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -103,7 +103,7 @@
         "gridPos": { "x": 12, "y": 8, "w": 12, "h": 10 },
         "targets": [
           {
-            "expr": "sum by (target) (count_over_time({service=\"app\"} |= \"DB Query\" | json | target != \"\" [5m]))",
+            "expr": "sum by (target) (count_over_time({job=\"mixdrop\"} |= \"DB Query\" | json | target != \"\" [5m]))",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
@@ -124,7 +124,7 @@
         "gridPos": { "x": 0, "y": 18, "w": 24, "h": 10 },
         "targets": [
           {
-            "expr": "{service=\"app\"} |~ \"DB (Query|Error|Warning)\"",
+            "expr": "{job=\"mixdrop\"} |~ \"DB (Query|Error|Warning)\"",
             "refId": "A",
             "datasource": { "type": "loki", "uid": "Loki" }
           }
