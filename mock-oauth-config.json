@@ -1,0 +1,24 @@
+{
+  "interactiveLogin": true,
+  "loginPagePath": null,
+  "staticAssetsPath": null,
+  "tokenCallbacks": [
+    {
+      "issuerId": "default",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "scope",
+          "match": "*",
+          "claims": {
+            "sub": "user123",
+            "name": "Test User",
+            "email": "test@mixdrop.local",
+            "picture": "https://i.pravatar.cc/150?img=3",
+            "preferred_username": "testuser"
+          }
+        }
+      ]
+    }
+  ]
+}

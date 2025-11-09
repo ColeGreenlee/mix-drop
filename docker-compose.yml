@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Redis - Caching layer
+  redis:
+    image: redis:7-alpine
+    container_name: mixdrop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Mock OAuth2 Server for local development
+  mock-oauth:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    container_name: mixdrop-oauth
+    ports:
+      - "8080:8080"
+    hostname: host.docker.internal
+    environment:
+      JSON_CONFIG_PATH: /app/config.json
+    volumes:
+      - ./mock-oauth-config.json:/app/config.json:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/isalive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # MinIO - S3-compatible storage
+  minio:
+    image: minio/minio:latest
+    container_name: mixdrop-minio
+    ports:
+      - "9000:9000"      # API
+      - "9001:9001"      # Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # MinIO Client - Create bucket on startup
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/mixdrop --ignore-existing;
+      mc anonymous set download myminio/mixdrop;
+      exit 0;
+      "
+
+  # Next.js App
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mixdrop-app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/mixdrop.db
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - S3_PUBLIC_ENDPOINT=http://localhost:9000
+      - S3_BUCKET=mixdrop
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_REGION=us-east-1
+      - S3_FORCE_PATH_STYLE=true
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=dev-secret-change-in-production
+      - OAUTH_CLIENT_ID=mixdrop
+      - OAUTH_CLIENT_SECRET=mixdrop-secret
+      - OAUTH_ISSUER=http://host.docker.internal:8080/default
+      - OAUTH_AUTHORIZATION_URL=http://localhost:8080/default/authorize
+      - OAUTH_TOKEN_URL=http://host.docker.internal:8080/default/token
+      - OAUTH_USERINFO_URL=http://host.docker.internal:8080/default/userinfo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - app_data:/app/data
+    depends_on:
+      - redis
+      - mock-oauth
+      - minio
+      - minio-setup
+
+volumes:
+  redis_data:
+  minio_data:
+  app_data:
