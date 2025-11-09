@@ -6,6 +6,10 @@
     "schemaVersion": 38,
     "version": 1,
     "refresh": "30s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
     "panels": [
       {
         "id": 1,
@@ -16,9 +20,28 @@
           {
             "expr": "sum(rate({job=\"mixdrop\"} |= \"HTTP\" [1m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
-        ]
+        ],
+        "options": {
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No data",
+            "custom": {
+              "fillOpacity": 10
+            }
+          }
+        }
       },
       {
         "id": 2,
@@ -29,13 +52,25 @@
           {
             "expr": "sum(rate({job=\"mixdrop\"} |~ \"level.*error\" [1m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
         ],
+        "options": {
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
         "fieldConfig": {
           "defaults": {
             "color": { "mode": "palette-classic" },
-            "custom": { "fillOpacity": 10 }
+            "custom": { "fillOpacity": 10 },
+            "noValue": "No errors"
           }
         }
       },
@@ -46,11 +81,28 @@
         "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum by (method) (count_over_time({job=\"mixdrop\"} | json | method != \"\" [5m]))",
+            "expr": "sum by (method) (count_over_time({job=\"mixdrop\"} | json | method != \"\" [2m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
-        ]
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No data"
+          }
+        }
       },
       {
         "id": 4,
@@ -59,14 +111,24 @@
         "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum by (statusCode) (count_over_time({job=\"mixdrop\"} | json | statusCode != \"\" [5m]))",
+            "expr": "sum by (statusCode) (count_over_time({job=\"mixdrop\"} | json | statusCode != \"\" [2m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "options": {
           "orientation": "horizontal",
-          "displayMode": "gradient"
+          "displayMode": "gradient",
+          "showUnfilled": true,
+          "text": {
+            "valueSize": 20
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No data"
+          }
         }
       },
       {
@@ -78,7 +140,8 @@
           {
             "expr": "{job=\"mixdrop\"}",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 1000
           }
         ],
         "options": {
@@ -90,6 +153,11 @@
           "enableLogDetails": true,
           "dedupStrategy": "none",
           "sortOrder": "Descending"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No logs available"
+          }
         }
       }
     ]

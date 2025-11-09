@@ -6,17 +6,50 @@
     "schemaVersion": 38,
     "version": 1,
     "refresh": "1m",
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    },
     "panels": [
       {
         "id": 1,
-        "title": "Error Count (Last Hour)",
+        "title": "Error Count (Last 15 min)",
         "type": "stat",
         "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
         "targets": [
           {
-            "expr": "sum(count_over_time({job=\"mixdrop\"} |~ \"level.*error\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |~ \"level.*error\" [15m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 5, "color": "yellow" },
+                { "value": 20, "color": "red" }
+              ]
+            },
+            "noValue": "0"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Warning Count (Last 15 min)",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |~ \"level.*warn\" [15m]))",
+            "refId": "A",
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "fieldConfig": {
@@ -27,35 +60,10 @@
               "steps": [
                 { "value": 0, "color": "green" },
                 { "value": 10, "color": "yellow" },
-                { "value": 50, "color": "red" }
+                { "value": 50, "color": "orange" }
               ]
-            }
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "Warning Count (Last Hour)",
-        "type": "stat",
-        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
-        "targets": [
-          {
-            "expr": "sum(count_over_time({job=\"mixdrop\"} |~ \"level.*warn\" [1h]))",
-            "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 20, "color": "yellow" },
-                { "value": 100, "color": "orange" }
-              ]
-            }
+            },
+            "noValue": "0"
           }
         }
       },
@@ -68,13 +76,25 @@
           {
             "expr": "sum(rate({job=\"mixdrop\"} |~ \"level.*error\" [1m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
         ],
+        "options": {
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
         "fieldConfig": {
           "defaults": {
             "color": { "mode": "palette-classic" },
-            "custom": { "fillOpacity": 20, "lineWidth": 2 }
+            "custom": { "fillOpacity": 20, "lineWidth": 2 },
+            "noValue": "No errors"
           }
         }
       },
@@ -85,15 +105,21 @@
         "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "sum by (context) (count_over_time({job=\"mixdrop\"} | json | level=\"error\" | context != \"\" [1h]))",
+            "expr": "sum by (context) (count_over_time({job=\"mixdrop\"} | json | level=\"error\" | context != \"\" [15m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "options": {
           "orientation": "horizontal",
           "displayMode": "gradient",
           "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No errors"
+          }
         }
       },
       {
@@ -103,11 +129,17 @@
         "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
         "targets": [
           {
-            "expr": "topk(10, sum by (msg) (count_over_time({job=\"mixdrop\"} | json | level=\"error\" [1h])))",
+            "expr": "topk(10, sum by (msg) (count_over_time({job=\"mixdrop\"} | json | level=\"error\" [15m])))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No errors"
+          }
+        }
       },
       {
         "id": 6,
@@ -118,7 +150,8 @@
           {
             "expr": "{job=\"mixdrop\"} |~ \"level.*(error|warn)\"",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 500
           }
         ],
         "options": {
@@ -130,6 +163,11 @@
           "enableLogDetails": true,
           "dedupStrategy": "none",
           "sortOrder": "Descending"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No errors or warnings"
+          }
         }
       }
     ]

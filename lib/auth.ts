@@ -6,6 +6,15 @@ import prisma from "@/lib/prisma";
 import { Adapter } from "next-auth/adapters";
 import { logError, logAuth } from "@/lib/logger";
 
+interface OAuthProfile {
+  sub?: string;
+  id?: string;
+  name?: string;
+  email?: string;
+  picture?: string;
+  avatar_url?: string;
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
@@ -59,42 +68,44 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
 
-    // OAuth SSO provider (disabled for local dev, enable in production)
-    // Uncomment for production OAuth SSO:
-    /*
-    {
-      id: "custom-sso",
-      name: "SSO",
-      type: "oauth",
-      clientId: process.env.OAUTH_CLIENT_ID!,
-      clientSecret: process.env.OAUTH_CLIENT_SECRET!,
-      wellKnown: process.env.OAUTH_ISSUER
-        ? `${process.env.OAUTH_ISSUER}/.well-known/openid-configuration`
-        : undefined,
-      authorization: {
-        url: process.env.OAUTH_AUTHORIZATION_URL!,
-        params: { scope: "openid email profile" },
-      },
-      token: process.env.OAUTH_TOKEN_URL!,
-      userinfo: process.env.OAUTH_USERINFO_URL!,
-      profile(profile) {
-        // Check if this email should be admin
-        const adminEmails = process.env.ADMIN_EMAILS?.split(",")
-          .map((e) => e.trim().toLowerCase())
-          .filter(Boolean) || [];
-        const userEmail = profile.email?.toLowerCase() || "";
-        const isAdminEmail = adminEmails.includes(userEmail);
+    // OAuth SSO provider (enabled for local dev with mock OAuth, and production)
+    // Will be available alongside local credentials when both are enabled
+    ...(process.env.OAUTH_CLIENT_ID && process.env.OAUTH_CLIENT_SECRET
+      ? [
+          {
+            id: "custom-sso",
+            name: "SSO",
+            type: "oauth" as const,
+            clientId: process.env.OAUTH_CLIENT_ID,
+            clientSecret: process.env.OAUTH_CLIENT_SECRET,
+            wellKnown: process.env.OAUTH_ISSUER
+              ? `${process.env.OAUTH_ISSUER}/.well-known/openid-configuration`
+              : undefined,
+            authorization: {
+              url: process.env.OAUTH_AUTHORIZATION_URL!,
+              params: { scope: "openid email profile" },
+            },
+            token: process.env.OAUTH_TOKEN_URL!,
+            userinfo: process.env.OAUTH_USERINFO_URL!,
+            profile(profile: OAuthProfile) {
+              // Check if this email should be admin
+              const adminEmails = process.env.ADMIN_EMAILS?.split(",")
+                .map((e) => e.trim().toLowerCase())
+                .filter(Boolean) || [];
+              const userEmail = profile.email?.toLowerCase() || "";
+              const isAdminEmail = adminEmails.includes(userEmail);
 
-        return {
-          id: profile.sub || profile.id,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture || profile.avatar_url,
-          role: isAdminEmail ? "admin" : "user",
-        };
-      },
-    },
-    */
+              return {
+                id: profile.sub || profile.id || "",
+                name: profile.name,
+                email: profile.email,
+                image: profile.picture || profile.avatar_url,
+                role: isAdminEmail ? "admin" : "user",
+              };
+            },
+          },
+        ]
+      : []),
   ],
   callbacks: {
     async jwt({ token, user }) {

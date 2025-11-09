@@ -34,20 +34,19 @@ services:
       timeout: 3s
       retries: 3
 
-  # Mock OAuth2 Server (DISABLED - using local credentials auth instead)
-  # Uncomment for OAuth testing in development
-  # mock-oauth:
-  #   image: ghcr.io/navikt/mock-oauth2-server:2.1.10
-  #   container_name: mixdrop-oauth
-  #   ports:
-  #     - "8080:8080"
-  #   hostname: host.docker.internal
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/default/isalive"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
+  # Mock OAuth2 Server (for local development with both local auth and OAuth)
+  mock-oauth:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    container_name: mixdrop-oauth
+    ports:
+      - "8080:8080"
+    hostname: host.docker.internal
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/default/isalive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # MinIO - S3-compatible storage
   minio:
@@ -174,7 +173,7 @@ services:
     depends_on:
       - postgres
       - redis
-      # - mock-oauth  # Disabled - using local credentials auth
+      - mock-oauth  # Mock OAuth for local development
       - minio
       - minio-setup
       - loki

@@ -6,17 +6,22 @@
     "schemaVersion": 38,
     "version": 1,
     "refresh": "1m",
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    },
     "panels": [
       {
         "id": 1,
-        "title": "Upload Success Rate",
+        "title": "Upload Success Rate (Last 15 min)",
         "type": "stat",
         "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"upload_mix\" |~ \"level.*info\" [1h])) / sum(count_over_time({job=\"mixdrop\"} |= \"upload_mix\" [1h])) * 100",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"upload_mix\" |~ \"level.*info\" [15m])) / sum(count_over_time({job=\"mixdrop\"} |= \"upload_mix\" [15m])) * 100",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "fieldConfig": {
@@ -29,7 +34,8 @@
                 { "value": 80, "color": "yellow" },
                 { "value": 95, "color": "green" }
               ]
-            }
+            },
+            "noValue": "No data"
           }
         }
       },
@@ -40,18 +46,39 @@
         "gridPos": { "x": 8, "y": 0, "w": 16, "h": 8 },
         "targets": [
           {
-            "expr": "sum(rate({job=\"mixdrop\"} |= \"Uploading\" [5m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"Uploading\" [2m]))",
             "refId": "A",
             "legendFormat": "Upload Attempts",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           },
           {
-            "expr": "sum(rate({job=\"mixdrop\"} |= \"upload_mix\" |~ \"level.*info\" [5m]))",
+            "expr": "sum(rate({job=\"mixdrop\"} |= \"upload_mix\" |~ \"level.*info\" [2m]))",
             "refId": "B",
             "legendFormat": "Successful Uploads",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
-        ]
+        ],
+        "options": {
+          "tooltip": {
+            "mode": "multi"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 10
+            },
+            "noValue": "No data"
+          }
+        }
       },
       {
         "id": 3,
@@ -62,7 +89,8 @@
           {
             "expr": "{job=\"mixdrop\"} |= \"upload_mix\" |~ \"level.*error\"",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 100
           }
         ],
         "transformations": [
@@ -74,7 +102,12 @@
               "renameByName": {}
             }
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No upload errors"
+          }
+        }
       },
       {
         "id": 4,
@@ -85,13 +118,19 @@
           {
             "expr": "{job=\"mixdrop\"} |= \"Uploading\" |~ \"level.*info\"",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 200
           }
         ],
         "options": {
           "showTime": true,
           "enableLogDetails": true,
           "sortOrder": "Descending"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No uploads"
+          }
         }
       },
       {
@@ -103,13 +142,25 @@
           {
             "expr": "sum(rate({job=\"mixdrop\"} |= \"Rate limit exceeded\" [1m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
         ],
+        "options": {
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
         "fieldConfig": {
           "defaults": {
             "color": { "mode": "palette-classic" },
-            "custom": { "fillOpacity": 30 }
+            "custom": { "fillOpacity": 30 },
+            "noValue": "No rate limits"
           }
         }
       }

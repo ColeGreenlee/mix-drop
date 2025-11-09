@@ -10,12 +10,25 @@ clients:
 
 scrape_configs:
   - job_name: mixdrop
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: mixdrop
-          __path__: /var/lib/docker/containers/*/*.log
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
 
-    pipeline_stages:
-      - docker: {}
+    relabel_configs:
+      # Only scrape containers from this compose project
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        regex: 'mix-drop'
+        action: keep
+
+      # Set job label
+      - replacement: 'mixdrop'
+        target_label: 'job'
+
+      # Add container name as label
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+
+      # Add service name from compose
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'

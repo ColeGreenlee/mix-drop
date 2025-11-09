@@ -6,6 +6,10 @@
     "schemaVersion": 38,
     "version": 1,
     "refresh": "30s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
     "panels": [
       {
         "id": 1,
@@ -16,26 +20,39 @@
           {
             "expr": "sum(rate({job=\"mixdrop\"} |= \"DB Query\" [1m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
         ],
+        "options": {
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
         "fieldConfig": {
           "defaults": {
             "unit": "reqps",
-            "custom": { "fillOpacity": 10 }
+            "custom": { "fillOpacity": 10 },
+            "noValue": "No data"
           }
         }
       },
       {
         "id": 2,
-        "title": "Database Errors",
+        "title": "Database Errors (Last 15 min)",
         "type": "stat",
         "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"DB Error\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"DB Error\" [15m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "fieldConfig": {
@@ -46,22 +63,24 @@
               "steps": [
                 { "value": 0, "color": "green" },
                 { "value": 1, "color": "yellow" },
-                { "value": 10, "color": "red" }
+                { "value": 5, "color": "red" }
               ]
-            }
+            },
+            "noValue": "0"
           }
         }
       },
       {
         "id": 3,
-        "title": "Database Warnings",
+        "title": "Database Warnings (Last 15 min)",
         "type": "stat",
         "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"DB Warning\" [1h]))",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"DB Warning\" [15m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "fieldConfig": {
@@ -71,10 +90,11 @@
               "mode": "absolute",
               "steps": [
                 { "value": 0, "color": "green" },
-                { "value": 5, "color": "yellow" },
-                { "value": 20, "color": "orange" }
+                { "value": 3, "color": "yellow" },
+                { "value": 10, "color": "orange" }
               ]
-            }
+            },
+            "noValue": "0"
           }
         }
       },
@@ -87,13 +107,19 @@
           {
             "expr": "{job=\"mixdrop\"} |= \"DB Query\" | json | duration > 100",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 200
           }
         ],
         "options": {
           "showTime": true,
           "enableLogDetails": true,
           "sortOrder": "Descending"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No slow queries"
+          }
         }
       },
       {
@@ -103,9 +129,10 @@
         "gridPos": { "x": 12, "y": 8, "w": 12, "h": 10 },
         "targets": [
           {
-            "expr": "sum by (target) (count_over_time({job=\"mixdrop\"} |= \"DB Query\" | json | target != \"\" [5m]))",
+            "expr": "sum by (target) (count_over_time({job=\"mixdrop\"} |= \"DB Query\" | json | target != \"\" [2m]))",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "options": {
@@ -114,6 +141,15 @@
             "placement": "right",
             "showLegend": true,
             "values": ["value", "percent"]
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No data"
           }
         }
       },
@@ -126,7 +162,8 @@
           {
             "expr": "{job=\"mixdrop\"} |~ \"DB (Query|Error|Warning)\"",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 500
           }
         ],
         "options": {
@@ -134,6 +171,11 @@
           "showLabels": false,
           "enableLogDetails": true,
           "sortOrder": "Descending"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No database operations"
+          }
         }
       }
     ]

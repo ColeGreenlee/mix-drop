@@ -129,7 +129,7 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : (
-            <Button onClick={() => signIn("custom-sso")}>Sign In</Button>
+            <Button onClick={() => signIn()}>Sign In</Button>
           )}
         </nav>
       </div>

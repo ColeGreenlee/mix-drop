@@ -1,13 +1,5 @@
 {
     "mcpServers": {
-        "chrome-devtools": {
-            "command": "pnpm",
-            "args": [
-                "dlx",
-                "chrome-devtools-mcp@latest"
-            ],
-            "env": {}
-        },
         "grafana": {
             "command": "npx",
             "args": [

@@ -6,6 +6,10 @@
     "schemaVersion": 38,
     "version": 1,
     "refresh": "30s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
     "panels": [
       {
         "id": 1,
@@ -14,9 +18,10 @@
         "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
         "targets": [
           {
-            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"Cache get\" |= \"HIT\" [5m])) / sum(count_over_time({job=\"mixdrop\"} |= \"Cache get\" [5m])) * 100",
+            "expr": "sum(count_over_time({job=\"mixdrop\"} |= \"Cache get\" |= \"HIT\" [2m])) / sum(count_over_time({job=\"mixdrop\"} |= \"Cache get\" [2m])) * 100",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 100
           }
         ],
         "fieldConfig": {
@@ -31,7 +36,8 @@
                 { "value": 50, "color": "yellow" },
                 { "value": 80, "color": "green" }
               ]
-            }
+            },
+            "noValue": "No data"
           }
         }
       },
@@ -45,21 +51,44 @@
             "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache get\" [1m]))",
             "refId": "A",
             "legendFormat": "Get Operations",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           },
           {
             "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache set\" [1m]))",
             "refId": "B",
             "legendFormat": "Set Operations",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           },
           {
             "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache delete\" [1m]))",
             "refId": "C",
             "legendFormat": "Delete Operations",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
-        ]
+        ],
+        "options": {
+          "tooltip": {
+            "mode": "multi"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 10
+            },
+            "noValue": "No data"
+          }
+        }
       },
       {
         "id": 3,
@@ -71,21 +100,35 @@
             "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache get\" |= \"HIT\" [1m]))",
             "refId": "A",
             "legendFormat": "Hits",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           },
           {
             "expr": "sum(rate({job=\"mixdrop\"} |= \"Cache get\" |= \"MISS\" [1m]))",
             "refId": "B",
             "legendFormat": "Misses",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxDataPoints": 500,
+            "interval": "30s"
           }
         ],
+        "options": {
+          "tooltip": {
+            "mode": "multi"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
         "fieldConfig": {
           "defaults": {
             "custom": {
               "drawStyle": "bars",
               "fillOpacity": 50
-            }
+            },
+            "noValue": "No data"
           }
         }
       },
@@ -98,13 +141,19 @@
           {
             "expr": "{job=\"mixdrop\"} |~ \"Redis (connected|error|failed)\"",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 200
           }
         ],
         "options": {
           "showTime": true,
           "enableLogDetails": true,
           "sortOrder": "Descending"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No Redis logs"
+          }
         }
       },
       {
@@ -116,9 +165,15 @@
           {
             "expr": "{job=\"mixdrop\"} |= \"cache\" |~ \"level.*error\"",
             "refId": "A",
-            "datasource": { "type": "loki", "uid": "Loki" }
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "maxLines": 100
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "noValue": "No cache errors"
+          }
+        }
       }
     ]
 }

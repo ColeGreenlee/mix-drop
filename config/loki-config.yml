@@ -22,6 +22,7 @@ query_range:
       embedded_cache:
         enabled: true
         max_size_mb: 100
+  parallelise_shardable_queries: false
 
 schema_config:
   configs:
@@ -45,6 +46,8 @@ limits_config:
   max_global_streams_per_user: 0
   reject_old_samples: true
   reject_old_samples_max_age: 168h
+  query_timeout: 5m
+  split_queries_by_interval: 1h
 
 # Compactor for retention enforcement
 compactor:
@@ -66,10 +69,9 @@ ingester:
         store: inmemory
       replication_factor: 1
 
-# Frontend worker
-frontend_worker:
-  frontend_address: 127.0.0.1:9095
-
 # Memberlist (for clustering, using defaults for single instance)
 memberlist:
   join_members: []
+
+# Target configuration - run all components in single binary
+target: all
