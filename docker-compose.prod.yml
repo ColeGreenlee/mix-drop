@@ -78,11 +78,12 @@ services:
   loki:
     image: grafana/loki:3.0.0
     container_name: mixdrop-loki-prod
+    user: "0:0"  # Run as root to avoid permission issues
     ports:
       - "127.0.0.1:3100:3100"  # Only expose to localhost
     volumes:
       - ./config/loki-config.yml:/etc/loki/local-config.yaml
-      - loki_data:/tmp/loki
+      - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     healthcheck:
@@ -115,6 +116,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
       - GF_SECURITY_SECRET_KEY=${GRAFANA_SECRET_KEY}
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/application-overview.json
     volumes:
       - grafana_data:/var/lib/grafana
       - ./config/grafana/datasources:/etc/grafana/provisioning/datasources

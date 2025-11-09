@@ -9,62 +9,44 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  # Docker container logs
   - job_name: docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-        filters:
-          - name: label
-            values: ["com.docker.compose.project=mix-drop"]
 
     relabel_configs:
-      # Extract container name
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
-        target_label: 'container'
-
-      # Extract compose service name
-      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
-        target_label: 'service'
-
-      # Add environment label
-      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
-        target_label: 'environment'
-        replacement: 'development'
-
       # Only scrape app container
       - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
         regex: 'app'
         action: keep
 
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: '__tmp_container_name'
+
+      # Set the service label from compose service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: '__tmp_service'
+
     pipeline_stages:
-      # Parse JSON logs from Pino
-      - json:
-          expressions:
-            level: level
-            timestamp: time
-            message: msg
-            requestId: requestId
-            userId: userId
-            duration: duration
-            statusCode: statusCode
-            method: method
-            path: path
-            error: err
+      # Parse docker format
+      - docker: {}
 
-      # Convert Pino log levels to Loki labels
-      - labels:
-          level:
-          requestId:
-          method:
-          statusCode:
+      # Add static labels (REQUIRED - ensures at least one label exists)
+      - static_labels:
+          job: mixdrop
+          app: mixdrop
 
-      # Add timestamp from log
-      - timestamp:
-          source: timestamp
-          format: UnixMs
-
-      # Format output message
-      - output:
-          source: message
+      # Try to parse JSON if it's Pino format
+      - match:
+          selector: '{job="mixdrop"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  message: msg
+            - labels:
+                level:
+            - output:
+                source: message

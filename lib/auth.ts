@@ -59,7 +59,9 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
 
-    // OAuth SSO provider
+    // OAuth SSO provider (disabled for local dev, enable in production)
+    // Uncomment for production OAuth SSO:
+    /*
     {
       id: "custom-sso",
       name: "SSO",
@@ -92,6 +94,7 @@ export const authOptions: NextAuthOptions = {
         };
       },
     },
+    */
   ],
   callbacks: {
     async jwt({ token, user }) {
