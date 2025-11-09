@@ -22,12 +22,19 @@ export const authOptions: NextAuthOptions = {
       token: process.env.OAUTH_TOKEN_URL!,
       userinfo: process.env.OAUTH_USERINFO_URL!,
       profile(profile) {
+        // Check if this email should be admin
+        const adminEmails = process.env.ADMIN_EMAILS?.split(",")
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean) || [];
+        const userEmail = profile.email?.toLowerCase() || "";
+        const isAdminEmail = adminEmails.includes(userEmail);
+
         return {
           id: profile.sub || profile.id,
           name: profile.name,
           email: profile.email,
           image: profile.picture || profile.avatar_url,
-          role: "user", // Default role for new users
+          role: isAdminEmail ? "admin" : "user",
         };
       },
     },
@@ -37,8 +44,27 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = user.id;
         session.user.role = (user as { role?: string }).role || "user";
+
+        // Update last login time (fire and forget, don't block session)
+        prisma.user
+          .update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          })
+          .catch((err) => console.error("Failed to update lastLoginAt:", err));
       }
       return session;
+    },
+    async signIn({ user }) {
+      // First user becomes admin (fallback if ADMIN_EMAILS not set)
+      const userCount = await prisma.user.count();
+      if (userCount === 1 && user.email) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { role: "admin" },
+        });
+      }
+      return true;
     },
   },
   pages: {

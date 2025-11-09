@@ -45,13 +45,17 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String    @default("user") // "user" or "admin"
+  status        String    @default("active") // "active", "suspended", "banned"
+  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts  Account[]
-  sessions  Session[]
-  mixes     Mix[]
-  playlists Playlist[]
+  accounts         Account[]
+  sessions         Session[]
+  mixes            Mix[]
+  playlists        Playlist[]
+  auditLogsAsActor AuditLog[]     @relation("Actor")
+  settingsUpdated  SiteSetting[]
 }
 
 model VerificationToken {
@@ -115,4 +119,32 @@ model PlaylistMix {
 
   @@unique([playlistId, mixId]) // Can't add same mix twice to a playlist
   @@index([playlistId, order]) // For efficient ordering
+}
+
+// Admin models
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String // JSON string for complex values
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  admin User? @relation(fields: [updatedBy], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String // e.g., "user.role.change", "mix.delete"
+  actorId   String
+  targetId  String? // ID of affected resource
+  details   String? // JSON with additional info
+  createdAt DateTime @default(now())
+
+  actor User @relation("Actor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
 }

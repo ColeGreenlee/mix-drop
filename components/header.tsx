@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Upload, LogOut, Music, Moon, Sun, Monitor, ListMusic, User } from "lucide-react";
+import { Upload, LogOut, Music, Moon, Sun, Monitor, ListMusic, User, Shield } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
 export function Header() {
@@ -79,6 +79,18 @@ export function Header() {
                       <span>My Playlists</span>
                     </Link>
                   </DropdownMenuItem>
+
+                  {session.user.role === "admin" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Admin Panel</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
 
                   <DropdownMenuSeparator />
 

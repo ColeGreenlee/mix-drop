@@ -23,10 +23,6 @@ services:
     ports:
       - "8080:8080"
     hostname: host.docker.internal
-    environment:
-      JSON_CONFIG_PATH: /app/config.json
-    volumes:
-      - ./mock-oauth-config.json:/app/config.json:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/isalive"]
       interval: 10s
