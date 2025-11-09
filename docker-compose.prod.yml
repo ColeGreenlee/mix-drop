@@ -76,9 +76,11 @@ services:
 
   # Next.js Application
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/colegreenlee/mix-drop:latest
+    # Uncomment to build locally instead of pulling from GHCR:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: mixdrop-app-prod
     ports:
       - "127.0.0.1:3000:3000"  # Only expose to localhost (use reverse proxy)

@@ -22,7 +22,7 @@ A modern, self-hosted platform for sharing DJ mixes with friends. Think SoundClo
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/ColeGreenlee/mix-drop.git
 cd mix-drop
 
 # Start all services (app, MinIO, Redis, mock OAuth)
@@ -32,6 +32,24 @@ docker-compose up --build
 ```
 
 That's it! The mock OAuth server lets you sign in with any credentials.
+
+### Using Pre-built Docker Images
+
+MixDrop automatically builds and publishes Docker images to GitHub Container Registry (GHCR) on every commit.
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/colegreenlee/mix-drop:latest
+
+# Or use a specific version
+docker pull ghcr.io/colegreenlee/mix-drop:v1.0.0
+```
+
+Available image tags:
+- `latest` - Latest commit on main branch
+- `main` - Main branch builds
+- `v*` - Semantic version tags (e.g., v1.0.0, v1.1.0)
+- `main-<sha>` - Specific commit SHA
 
 ### Services & Ports
 
@@ -101,7 +119,12 @@ Required production environment variables:
 
 **Step 2: Deploy with Docker Compose**
 
+MixDrop publishes pre-built Docker images to GitHub Container Registry (GHCR) on every commit to main.
+
 ```bash
+# Pull the latest image
+docker pull ghcr.io/colegreenlee/mix-drop:latest
+
 # Start all services (PostgreSQL, Redis, App)
 docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
 
@@ -110,6 +133,12 @@ docker-compose -f docker-compose.prod.yml ps
 
 # View logs
 docker-compose -f docker-compose.prod.yml logs -f app
+```
+
+**Alternative: Build locally** (if you want to customize the image):
+```bash
+# Edit docker-compose.prod.yml and uncomment the build section
+docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
 **Step 3: Set Up Reverse Proxy for HTTPS**
