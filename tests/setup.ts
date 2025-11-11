@@ -17,7 +17,9 @@ vi.mock("*.scss", () => ({}));
 // Mock environment variables for tests
 process.env.NEXTAUTH_URL = "http://localhost:3000";
 process.env.NEXTAUTH_SECRET = "test-secret";
-process.env.NODE_ENV = "test";
+if (!process.env.NODE_ENV) {
+  (process.env as any).NODE_ENV = "test";
+}
 
 // S3 environment variables (needed for s3.ts module loading)
 process.env.S3_ENDPOINT = "http://localhost:9000";

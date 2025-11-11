@@ -4,7 +4,6 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  css: false, // Disable CSS processing in tests
   test: {
     // Default to running all tests (workspace will split into projects)
     globals: true,

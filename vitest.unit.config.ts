@@ -1,18 +1,23 @@
-import { defineConfig, mergeConfig } from "vitest/config";
-import baseConfig from "./vitest.config";
+import { defineConfig } from "vitest/config";
+import path from "path";
 
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    test: {
-      name: "unit",
-      include: ["**/*.test.{ts,tsx}"],
-      exclude: [
-        "**/node_modules/**",
-        "**/dist/**",
-        "**/.next/**",
-        "**/tests/integration/**",
-      ],
+export default defineConfig({
+  test: {
+    name: "unit",
+    globals: true,
+    environment: "happy-dom",
+    setupFiles: ["./tests/setup.ts"],
+    include: ["**/*.test.{ts,tsx}"],
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.next/**",
+      "**/tests/integration/**",
+    ],
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./"),
     },
-  })
-);
+  },
+});

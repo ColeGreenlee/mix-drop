@@ -206,7 +206,7 @@ describe("MixCard", () => {
     const privateMix = createTestMix({ isPublic: false });
     const { container: privateContainer } = render(
       <AudioPlayerProvider>
-        <MixCard mix={privateMix} onPlay={mockOnPlay} onUpdate={mockOnUpdate} />
+        <MixCard mix={privateMix as any} onPlay={mockOnPlay} onUpdate={mockOnUpdate} />
       </AudioPlayerProvider>
     );
 

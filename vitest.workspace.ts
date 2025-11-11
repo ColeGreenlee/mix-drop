@@ -2,7 +2,9 @@ import { defineWorkspace } from "vitest/config";
 import path from "path";
 
 // Set NODE_ENV for PostCSS config
-process.env.NODE_ENV = "test";
+if (!process.env.NODE_ENV) {
+  (process.env as any).NODE_ENV = "test";
+}
 
 export default defineWorkspace([
   {

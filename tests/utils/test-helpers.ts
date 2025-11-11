@@ -138,8 +138,9 @@ export const createFormData = (data: Record<string, any>): FormData => {
 
 /**
  * Mock console methods to suppress logs during tests
+ * Note: Import vi, beforeEach, afterEach from vitest in your test file before using this
  */
-export const mockConsole = () => {
+export const mockConsole = (beforeEach: any, afterEach: any, vi: any) => {
   const originalConsole = { ...console };
 
   beforeEach(() => {

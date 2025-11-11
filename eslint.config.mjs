@@ -21,8 +21,15 @@ const eslintConfig = [
     ],
   },
   {
-    // Relax rules for test files - `any` is acceptable in mocks and test utilities
-    files: ["**/*.test.ts", "**/*.test.tsx", "tests/**/*.ts", "tests/**/*.tsx"],
+    // Relax rules for test files and configs - `any` is acceptable in mocks and test utilities
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "tests/**/*.ts",
+      "tests/**/*.tsx",
+      "**/vitest*.ts",
+      "**/*.config.ts",
+    ],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "warn",

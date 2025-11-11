@@ -143,8 +143,7 @@ describe("Admin API Integration Tests", () => {
       const privateMix = createMockMix({ uploaderId: regularUser.id, isPublic: false });
       await prisma.mix.createMany({ data: [mix1, mix2, privateMix] });
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -170,8 +169,7 @@ describe("Admin API Integration Tests", () => {
       });
       await prisma.mix.createMany({ data: [mix1, mix2] });
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -182,8 +180,7 @@ describe("Admin API Integration Tests", () => {
     it("should deny access for non-admin users", async () => {
       mockGetSession.mockResolvedValue(regularSession);
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(403);
     });
@@ -191,8 +188,7 @@ describe("Admin API Integration Tests", () => {
     it("should require authentication", async () => {
       mockGetSession.mockResolvedValue(null);
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(401);
     });
@@ -200,8 +196,7 @@ describe("Admin API Integration Tests", () => {
     it("should include user role breakdown", async () => {
       mockGetSession.mockResolvedValue(adminSession);
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -221,8 +216,7 @@ describe("Admin API Integration Tests", () => {
       });
       await prisma.user.create({ data: suspendedUser });
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -249,7 +243,7 @@ describe("Admin API Integration Tests", () => {
         if (url.includes("/users")) {
           response = await getUsers(request);
         } else if (url.includes("/stats")) {
-          response = await getStats(request);
+          response = await getStats();
         }
 
         expect(response?.status).toBe(403);
@@ -263,8 +257,7 @@ describe("Admin API Integration Tests", () => {
       const usersResponse = await getUsers(usersRequest);
       expect(usersResponse.status).toBe(200);
 
-      const statsRequest = new NextRequest("http://localhost:3000/api/admin/stats");
-      const statsResponse = await getStats(statsRequest);
+      const statsResponse = await getStats();
       expect(statsResponse.status).toBe(200);
     });
   });
@@ -283,8 +276,7 @@ describe("Admin API Integration Tests", () => {
       });
       await prisma.mix.createMany({ data: [mix1, mix2] });
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -302,8 +294,7 @@ describe("Admin API Integration Tests", () => {
       });
       await prisma.mix.create({ data: recentMix });
 
-      const request = new NextRequest("http://localhost:3000/api/admin/stats");
-      const response = await getStats(request);
+      const response = await getStats();
 
       expect(response.status).toBe(200);
       const data = await response.json();

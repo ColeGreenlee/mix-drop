@@ -16,6 +16,7 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
   role: "user",
   status: "active",
   emailVerified: faker.date.past(),
+  lastLoginAt: faker.date.recent(),
   createdAt: faker.date.past(),
   updatedAt: faker.date.recent(),
   ...overrides,
@@ -61,7 +62,7 @@ export const createMockPlaylistMix = (
   playlistId: faker.string.uuid(),
   mixId: faker.string.uuid(),
   order: faker.number.int({ min: 0, max: 100 }),
-  createdAt: faker.date.past(),
+  addedAt: faker.date.past(),
   ...overrides,
 });
 
@@ -106,13 +107,13 @@ export const createMockFormData = (overrides?: {
 
   const audioFile =
     overrides?.audioFile ||
-    new File([createMockAudioBuffer()], "test-mix.mp3", {
+    new File([createMockAudioBuffer() as unknown as BlobPart], "test-mix.mp3", {
       type: "audio/mpeg",
     });
 
   const coverImage =
     overrides?.coverImage ||
-    new File([createMockImageBuffer()], "cover.jpg", {
+    new File([createMockImageBuffer() as unknown as BlobPart], "cover.jpg", {
       type: "image/jpeg",
     });
 

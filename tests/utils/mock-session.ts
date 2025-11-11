@@ -19,7 +19,7 @@ export const createMockSession = (user?: Partial<MockSessionUser>): Session => {
 
   return {
     user: {
-      id: mockUser.id,
+      id: mockUser.id || "test-user-id",
       name: mockUser.name || null,
       email: mockUser.email || null,
       image: mockUser.image || null,
