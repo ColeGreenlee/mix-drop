@@ -67,7 +67,7 @@ export function validateFileType(
   const allowedTypes =
     type === "audio" ? ALLOWED_MIME_TYPES.AUDIO : ALLOWED_MIME_TYPES.IMAGES;
 
-  if (!allowedTypes.includes(file.type as any)) {
+  if (!(allowedTypes as readonly string[]).includes(file.type)) {
     return {
       field: type === "audio" ? "audio" : "coverArt",
       message: `Invalid file type. Allowed: ${allowedTypes.join(", ")}`,

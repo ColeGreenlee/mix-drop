@@ -43,7 +43,6 @@ import {
 import {
   MAX_FILE_SIZES,
   ALLOWED_MIME_TYPES,
-  INPUT_LIMITS,
 } from "@/lib/constants";
 import prisma from "@/lib/prisma";
 
@@ -285,7 +284,7 @@ describe("upload-service", () => {
 
   describe("processFileUpload", () => {
     it("should upload audio file to S3", async () => {
-      const { uploadToS3, generateStorageKey } = await import("@/lib/s3");
+      const { uploadToS3 } = await import("@/lib/s3");
 
       const file = new File(["audio content"], "test.mp3", {
         type: "audio/mpeg",

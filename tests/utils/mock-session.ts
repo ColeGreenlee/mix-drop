@@ -1,6 +1,5 @@
 import { Session } from "next-auth";
 import { vi } from "vitest";
-import type { User } from "@prisma/client";
 import { createMockUser, createMockAdmin } from "./test-factories";
 
 /**

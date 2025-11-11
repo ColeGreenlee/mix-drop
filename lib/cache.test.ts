@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Create mock client with spy functions
 const mockRedisClient = {
@@ -93,7 +93,7 @@ describe("cache", () => {
 
       // Module is already loaded, so this test verifies the null check works
       // In a real scenario without REDIS_URL, getRedisClient() returns null
-      const result = await cacheGet("test-key");
+      await cacheGet("test-key");
 
       // May return null or cached value depending on module state
       // Restore URL

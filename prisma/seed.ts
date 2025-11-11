@@ -9,7 +9,7 @@ async function main() {
   // Create default admin user for local development
   const hashedPassword = await bcrypt.hash("admin", 12);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@mixdrop.local" },
     update: {}, // Don't update if already exists
     create: {

@@ -1,10 +1,5 @@
 import { vi } from "vitest";
-import type {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
+import type { S3Client } from "@aws-sdk/client-s3";
 
 /**
  * Mock S3 client for testing

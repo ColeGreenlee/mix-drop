@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "@/app/api/mixes/route";
-import { clearTestDatabase, seedTestData } from "../setup";
+import { clearTestDatabase } from "../setup";
 import { createMockUser, createMockMix } from "@/tests/utils/test-factories";
 import prisma from "@/lib/prisma";
 
@@ -203,7 +203,6 @@ describe("GET /api/mixes", () => {
     // Second request should return cached result
     const request2 = new NextRequest("http://localhost:3000/api/mixes");
     const response2 = await GET(request2);
-    const data2 = await response2.json();
 
     // Note: This test might need adjustment based on actual caching implementation
     // The response might still show the mix due to caching
