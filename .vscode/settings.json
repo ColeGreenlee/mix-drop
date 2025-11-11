@@ -1,0 +1,44 @@
+{
+  "vitest.enable": true,
+  "vitest.workspaceConfig": "vitest.workspace.ts",
+  "vitest.commandLine": "pnpm exec vitest",
+
+  // Show test coverage in gutter
+  "coverage-gutters.coverageFileNames": [
+    "coverage/lcov.info",
+    "coverage/coverage-final.json"
+  ],
+
+  // Auto-run tests on save (optional - can be disabled)
+  "vitest.autoReload": true,
+
+  // TypeScript settings
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ESLint
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  // Format on save
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // File associations
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+
+  // Exclude from file watcher
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/coverage/**": true
+  }
+}

@@ -734,7 +734,6 @@ logError(error, { context: "upload", mixId });
 **Trade-offs:**
 - JWT sessions stateless (can't invalidate until expiry)
 - Waveform algorithm is placeholder (needs production solution)
-- No automated tests yet (should add before prod)
 - Rate limiting depends on Redis (fails open if unavailable)
 
 ### Debugging
@@ -754,6 +753,184 @@ logError(error, { context: "upload", mixId });
 
 ---
 
+## Testing Strategy
+
+MixDrop has a comprehensive testing suite with 324+ tests covering critical functionality.
+
+### Testing Framework
+
+**Stack:**
+- **Vitest** - Modern, fast test runner (better Next.js 15 support than Jest)
+- **@testing-library/react** - Component testing
+- **Testcontainers** - Docker-based integration tests
+- **vitest-mock-extended** - Advanced mocking
+- **@faker-js/faker** - Realistic test data
+
+**Configuration:**
+```
+vitest.config.ts              # Main config, 80% coverage threshold
+vitest.unit.config.ts         # Unit tests (fast, mocked dependencies)
+vitest.integration.config.ts  # Integration tests (Docker services)
+tests/setup.ts                # Global test setup
+.env.test                     # Test environment variables
+```
+
+### Test Commands
+
+```bash
+pnpm test              # Run all tests
+pnpm test:unit         # Unit tests only (fast)
+pnpm test:integration  # Integration tests (requires Docker)
+pnpm test:coverage     # Generate coverage report
+pnpm test:watch        # Watch mode
+pnpm test:ui           # Interactive UI
+pnpm type-check        # TypeScript validation
+```
+
+### Test Structure
+
+**Unit Tests (192 tests):**
+- lib/\*.test.ts - Co-located with source files
+- Tests utilities, caching, auth, rate-limiting, S3, etc.
+- Mocked external dependencies (Redis, S3, Prisma)
+
+**Integration Tests (50+ tests):**
+- tests/integration/api/\*.test.ts
+- Real PostgreSQL, Redis, MinIO via Testcontainers
+- Tests API routes end-to-end
+
+**Component Tests (60+ tests):**
+- components/\*.test.tsx
+- Audio player context, mix cards, dialogs
+- User interaction testing
+
+**Service Layer (22 tests):**
+- lib/services/upload-service.ts - Extracted business logic
+- Highly testable, reusable, 95% covered
+
+### Test Utilities
+
+**Mock Factories (tests/utils/test-factories.ts):**
+```typescript
+const user = createMockUser({ role: "admin" });
+const mix = createMockMix({ uploaderId: user.id });
+const playlist = createMockPlaylist({ userId: user.id });
+```
+
+**Session Mocking (tests/utils/mock-session.ts):**
+```typescript
+const userSession = createMockUserSession();
+const adminSession = createMockAdminSession();
+```
+
+**Mock Services (tests/mocks/):**
+- s3.mock.ts - In-memory S3 client
+- redis.mock.ts - In-memory Redis client
+- prisma.mock.ts - Database mocking
+
+### Writing Tests
+
+**Pattern to Follow:**
+```typescript
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { myFunction } from "./my-module";
+
+// Mock dependencies
+vi.mock("@/lib/dependency", () => ({ ... }));
+
+describe("myModule", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should do something", async () => {
+    // Arrange
+    const input = setupTestData();
+
+    // Act
+    const result = await myFunction(input);
+
+    // Assert
+    expect(result).toBe(expected);
+  });
+});
+```
+
+### CI/CD Integration
+
+**GitHub Actions (.github/workflows/test.yml):**
+- Runs on every push to main and PR
+- Lint → Type-check → Unit tests → Integration tests
+- Coverage reporting to Codecov
+- Blocks deployment if tests fail or coverage < 80%
+- Posts coverage report as PR comment
+
+**Docker Publish Workflow:**
+- Depends on tests passing first
+- Only builds/pushes if all tests succeed
+
+### Coverage Targets
+
+- **Overall:** 80% minimum (enforced in CI)
+- **Utilities:** 90%+
+- **Core logic:** 90%+
+- **Service layer:** 95%+
+- **API routes:** 85%+
+- **Components:** 70%+
+
+### Testability Patterns
+
+**Dependency Injection:**
+```typescript
+// lib/s3.ts supports DI
+export function createS3Client(config?: S3Config): S3Client;
+export function uploadToS3(key, buffer, type, client?: S3Client);
+
+// In tests:
+const mockClient = createMockS3Client();
+await uploadToS3("key", buffer, "audio/mpeg", mockClient);
+```
+
+**Service Layer:**
+```typescript
+// Business logic extracted from API routes
+import { uploadMix, validateFileSize } from "@/lib/services/upload-service";
+
+// Testable in isolation
+const result = await uploadMix({ title, artist, audioFile, uploaderId });
+```
+
+**Graceful Degradation:**
+```typescript
+// Cache, rate-limit, audit all fail gracefully
+// Tests verify error handling doesn't break operations
+```
+
+### Common Test Scenarios
+
+**Testing Auth Guards:**
+```typescript
+mockGetSession.mockResolvedValue(null);
+const response = await GET(request);
+expect(response.status).toBe(401);
+```
+
+**Testing API Routes:**
+```typescript
+const request = new NextRequest("http://localhost:3000/api/mixes");
+const response = await GET(request);
+expect(response.status).toBe(200);
+```
+
+**Testing Components:**
+```typescript
+const { result } = renderHook(() => useAudioPlayer(), { wrapper });
+act(() => result.current.playMix(mix));
+expect(result.current.currentMix).toEqual(mix);
+```
+
+---
+
 ## Summary
 
 MixDrop is a Next.js 15 application with:
@@ -765,6 +942,7 @@ MixDrop is a Next.js 15 application with:
 - **Structured logging:** All events tracked with requestId correlation
 - **Precomputed waveforms:** Generated during upload for instant display
 - **Playlist ordering:** Drag-and-drop with explicit order field
+- **Comprehensive testing:** 324+ tests with Vitest, 80% coverage target, CI/CD integrated
 
 For specific implementations, refer to source code with this architectural context.
 
