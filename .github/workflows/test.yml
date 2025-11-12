@@ -1,11 +1,9 @@
 name: Test Suite
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-  workflow_call: # Make this workflow reusable by docker-publish.yml
+  workflow_call: # Called by docker-publish.yml on push to main
 
 jobs:
   test:
