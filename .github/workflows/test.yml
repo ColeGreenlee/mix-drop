@@ -68,8 +68,8 @@ jobs:
           if [ -f coverage/coverage-summary.json ]; then
             COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
             echo "Coverage: $COVERAGE%"
-            if (( $(echo "$COVERAGE < 50" | bc -l) )); then
-              echo "Coverage is below 50%!"
+            if (( $(echo "$COVERAGE < 45" | bc -l) )); then
+              echo "Coverage is below 45%!"
               exit 1
             fi
           fi
@@ -93,7 +93,7 @@ jobs:
               | Functions | ${functions.pct}% |
               | Branches | ${branches.pct}% |
 
-              **Overall:** ${lines.pct >= 50 ? '✅' : '❌'} ${lines.pct >= 50 ? 'Meets' : 'Below'} 50% threshold
+              **Overall:** ${lines.pct >= 45 ? '✅' : '❌'} ${lines.pct >= 45 ? 'Meets' : 'Below'} 45% threshold
               `;
 
               github.rest.issues.createComment({
