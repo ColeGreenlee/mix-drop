@@ -63,16 +63,6 @@ jobs:
       # Integration tests disabled - they require complex Docker setup
       # Run them locally with: pnpm test:integration (requires Docker Desktop)
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          name: codecov-mixdrop
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Check coverage thresholds
         run: |
           if [ -f coverage/coverage-summary.json ]; then

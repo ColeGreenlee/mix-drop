@@ -1,7 +1,6 @@
 # MixDrop 🎵
 
 [![Tests](https://github.com/ColeGreenlee/mix-drop/actions/workflows/test.yml/badge.svg)](https://github.com/ColeGreenlee/mix-drop/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/ColeGreenlee/mix-drop/branch/main/graph/badge.svg)](https://codecov.io/gh/ColeGreenlee/mix-drop)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A modern, self-hosted platform for sharing DJ mixes with friends. Think SoundCloud, but private and under your control.

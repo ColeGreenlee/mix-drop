@@ -860,9 +860,9 @@ describe("myModule", () => {
 
 **GitHub Actions (.github/workflows/test.yml):**
 - Runs on every push to main and PR
-- Lint → Type-check → Unit tests → Integration tests
-- Coverage reporting to Codecov
-- Blocks deployment if tests fail or coverage < 80%
+- Lint → Type-check → Unit tests with coverage
+- Coverage thresholds enforced (80%)
+- Blocks deployment if tests fail
 - Posts coverage report as PR comment
 
 **Docker Publish Workflow:**
