@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
               const isAdminEmail = adminEmails.includes(userEmail);
 
               return {
-                id: profile.sub || profile.id || "",
+                id: String(profile.sub || profile.id || ""),
                 name: profile.name,
                 email: profile.email,
                 image: profile.picture || profile.avatar_url,
