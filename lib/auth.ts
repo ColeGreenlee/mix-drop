@@ -25,12 +25,9 @@ export const authOptions: NextAuthOptions = {
             type: "oauth" as const,
             clientId: process.env.OAUTH_CLIENT_ID,
             clientSecret: process.env.OAUTH_CLIENT_SECRET,
-            wellKnown: process.env.OAUTH_ISSUER
-              ? `${process.env.OAUTH_ISSUER}/.well-known/openid-configuration`
-              : undefined,
             authorization: {
               url: process.env.OAUTH_AUTHORIZATION_URL!,
-              params: { scope: "openid email profile" },
+              params: { scope: "openid email profile user:email" },
             },
             token: process.env.OAUTH_TOKEN_URL!,
             userinfo: process.env.OAUTH_USERINFO_URL!,
