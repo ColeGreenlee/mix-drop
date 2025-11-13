@@ -183,12 +183,9 @@ export async function getPresignedUploadUrl(
     // Generate URL using internal endpoint (works server-side)
     const url = await getSignedUrl(s3, command, {
       expiresIn,
-      // Exclude headers that axios won't send to prevent signature mismatch
-      unhoistableHeaders: new Set([
-        "x-amz-content-sha256",
-        "x-amz-checksum-crc32",
-        "x-amz-sdk-checksum-algorithm",
-      ]),
+      // Only sign the host header - exclude checksum headers that browsers won't send
+      signableHeaders: new Set(["host"]),
+      unhoistableHeaders: new Set(["x-amz-content-sha256"]),
     });
 
     // Replace internal endpoint with public endpoint for browser access
