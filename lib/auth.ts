@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
             },
             token: process.env.OAUTH_TOKEN_URL!,
             userinfo: process.env.OAUTH_USERINFO_URL!,
-            checks: ["state"], // Disable PKCE and id_token validation (OAuth 2.0, not OIDC)
+            checks: ["state" as const], // Disable PKCE and id_token validation (OAuth 2.0, not OIDC)
             idToken: false, // GitHub OAuth doesn't provide id_token
             profile(profile: OAuthProfile) {
               // Check if this email should be admin
