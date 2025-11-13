@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Music } from "lucide-react";
+import { extractAudioDuration, validateAudioFile, formatFileSize } from "@/lib/client/audio-utils";
+import { MAX_FILE_SIZES, ALLOWED_AUDIO_TYPES } from "@/lib/constants";
 
 export default function UploadPage() {
   const router = useRouter();
@@ -40,19 +43,112 @@ export default function UploadPage() {
     setProgress(0);
 
     const formData = new FormData(e.currentTarget);
+    const audioFile = formData.get("audio") as File;
+    const title = formData.get("title") as string;
+    const artist = formData.get("artist") as string;
+    const description = formData.get("description") as string;
+    const isPublic = formData.get("isPublic") === "on";
+    const coverArtFile = formData.get("coverArt") as File;
 
     try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Upload failed");
+      // Step 1: Validate audio file
+      const validation = validateAudioFile(
+        audioFile,
+        MAX_FILE_SIZES.AUDIO,
+        ALLOWED_AUDIO_TYPES as unknown as string[]
+      );
+      if (!validation.valid) {
+        throw new Error(validation.error);
       }
 
-      await response.json(); // Parse response but don't use it
+      // Step 2: Extract audio duration client-side
+      setProgress(5);
+      const duration = await extractAudioDuration(audioFile);
+
+      // Step 3: Get presigned URL from server
+      setProgress(10);
+      const presignedResponse = await fetch("/api/upload/presigned-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: audioFile.name,
+          contentType: audioFile.type,
+          fileSize: audioFile.size,
+        }),
+      });
+
+      if (!presignedResponse.ok) {
+        const errorData = await presignedResponse.json();
+        throw new Error(errorData.error || "Failed to get upload URL");
+      }
+
+      const { presignedUrl, storageKey } = await presignedResponse.json();
+
+      // Step 4: Upload cover art if provided
+      let coverArtKey: string | null = null;
+      if (coverArtFile && coverArtFile.size > 0) {
+        setProgress(15);
+
+        // Get presigned URL for cover art
+        const coverPresignedResponse = await fetch("/api/upload/presigned-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: coverArtFile.name,
+            contentType: coverArtFile.type,
+            fileSize: coverArtFile.size,
+          }),
+        });
+
+        if (coverPresignedResponse.ok) {
+          const { presignedUrl: coverPresignedUrl, storageKey: coverStorageKey } =
+            await coverPresignedResponse.json();
+
+          // Upload cover art directly to S3
+          await axios.put(coverPresignedUrl, coverArtFile, {
+            headers: { "Content-Type": coverArtFile.type },
+          });
+
+          coverArtKey = coverStorageKey;
+        }
+      }
+
+      // Step 5: Upload audio directly to S3 with progress tracking
+      setProgress(20);
+      await axios.put(presignedUrl, audioFile, {
+        headers: { "Content-Type": audioFile.type },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            // Reserve 20-90% for audio upload progress
+            const percentComplete = Math.round(
+              20 + (progressEvent.loaded / progressEvent.total) * 70
+            );
+            setProgress(percentComplete);
+          }
+        },
+      });
+
+      // Step 6: Finalize upload with server (create database record)
+      setProgress(90);
+      const finalizeResponse = await fetch("/api/upload/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storageKey,
+          title,
+          artist,
+          description: description || null,
+          duration,
+          isPublic,
+          coverArtKey,
+        }),
+      });
+
+      if (!finalizeResponse.ok) {
+        const errorData = await finalizeResponse.json();
+        throw new Error(errorData.error || "Failed to finalize upload");
+      }
+
       setProgress(100);
 
       // Redirect to home page after successful upload

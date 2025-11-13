@@ -22,12 +22,23 @@ export const ALLOWED_MIME_TYPES = {
   IMAGES: ["image/jpeg", "image/png", "image/webp"] as const,
 } as const;
 
+// Convenience exports
+export const ALLOWED_AUDIO_TYPES = ALLOWED_MIME_TYPES.AUDIO;
+export const ALLOWED_IMAGE_TYPES = ALLOWED_MIME_TYPES.IMAGES;
+
 // Cache TTLs (in seconds)
 export const CACHE_TTL = {
   MIXES_LIST: 300, // 5 minutes
   MIX_DETAIL: 3600, // 1 hour
   STREAM_URL: 1800, // 30 minutes
   WAVEFORM_PEAKS: 86400, // 24 hours
+  PUBLIC_SETTINGS: 300, // 5 minutes
+} as const;
+
+// S3 Presigned URLs (in seconds)
+export const PRESIGNED_URL = {
+  UPLOAD_EXPIRY: 900, // 15 minutes - time client has to complete upload
+  DOWNLOAD_EXPIRY: 3600, // 1 hour - time stream URL is valid
 } as const;
 
 // Rate Limiting

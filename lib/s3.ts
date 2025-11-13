@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logError } from "./logger";
@@ -152,6 +153,77 @@ export async function getPresignedUrl(
   } catch (error) {
     logError(error, { s3: { operation: "presign", key } });
     throw error;
+  }
+}
+
+/**
+ * Generate a pre-signed URL for uploading a file directly to S3
+ * Allows clients to upload files without routing through the server
+ * @param key - The object key (path) in the bucket
+ * @param contentType - The MIME type of the file to upload
+ * @param expiresIn - URL expiration time in seconds (default: 15 minutes)
+ * @param client - Optional S3 client (for testing)
+ * @returns Pre-signed PUT URL for direct upload
+ */
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 900, // 15 minutes
+  client?: S3Client
+): Promise<string> {
+  const s3 = client || getS3Client();
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  try {
+    // Generate URL using internal endpoint (works server-side)
+    const url = await getSignedUrl(s3, command, {
+      expiresIn,
+      unhoistableHeaders: new Set(["x-amz-content-sha256"]),
+    });
+
+    // Replace internal endpoint with public endpoint for browser access
+    if (S3_PUBLIC_ENDPOINT && process.env.S3_ENDPOINT) {
+      return url.replace(process.env.S3_ENDPOINT, S3_PUBLIC_ENDPOINT);
+    }
+
+    return url;
+  } catch (error) {
+    logError(error, { s3: { operation: "presign_upload", key } });
+    throw error;
+  }
+}
+
+/**
+ * Verify an S3 object exists and get its metadata
+ * @param key - The object key (path) in the bucket
+ * @param client - Optional S3 client (for testing)
+ * @returns Object metadata or null if not found
+ */
+export async function verifyS3Object(
+  key: string,
+  client?: S3Client
+): Promise<{ size: number; contentType?: string } | null> {
+  const s3 = client || getS3Client();
+
+  const command = new HeadObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+
+  try {
+    const response = await s3.send(command);
+    return {
+      size: response.ContentLength || 0,
+      contentType: response.ContentType,
+    };
+  } catch (error) {
+    // Object doesn't exist
+    return null;
   }
 }
 

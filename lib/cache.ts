@@ -120,4 +120,5 @@ export const CacheKeys = {
   mix: (id: string) => `mix:${id}`,
   streamUrl: (mixId: string, type: string = "audio") => `stream:${mixId}:${type}`,
   waveformPeaks: (mixId: string) => `waveform:${mixId}`,
+  publicSettings: () => "settings:public",
 };

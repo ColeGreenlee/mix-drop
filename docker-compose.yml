@@ -67,7 +67,7 @@ services:
       timeout: 20s
       retries: 3
 
-  # MinIO Client - Create bucket on startup
+  # MinIO Client - Create bucket and configure CORS on startup
   minio-setup:
     image: minio/mc:latest
     depends_on:
@@ -78,8 +78,12 @@ services:
       mc alias set myminio http://minio:9000 minioadmin minioadmin;
       mc mb myminio/mixdrop --ignore-existing;
       mc anonymous set download myminio/mixdrop;
+      mc anonymous set upload myminio/mixdrop;
+      mc cors set /tmp/cors.json myminio/mixdrop;
       exit 0;
       "
+    volumes:
+      - ./config/minio-cors.json:/tmp/cors.json:ro
 
   # Loki - Log aggregation
   loki:

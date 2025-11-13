@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,13 +19,29 @@ import { useTheme } from "./theme-provider";
 export function Header() {
   const { data: session, status } = useSession();
   const { theme, setTheme } = useTheme();
+  const [siteName, setSiteName] = useState("MixDrop");
+
+  useEffect(() => {
+    // Fetch site name from public settings
+    fetch("/api/settings/public")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.site_name) {
+          setSiteName(data.site_name);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch site settings:", error);
+        // Keep default "MixDrop" on error
+      });
+  }, []);
 
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
           <Music className="w-6 h-6" />
-          <span className="hidden sm:inline">MixDrop</span>
+          <span className="hidden sm:inline">{siteName}</span>
         </Link>
 
         <nav className="flex items-center gap-2 sm:gap-4">

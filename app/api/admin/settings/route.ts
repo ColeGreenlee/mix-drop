@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { createAuditLog, AUDIT_ACTIONS } from "@/lib/audit";
 import { logError } from "@/lib/logger";
 import prisma from "@/lib/prisma";
+import { cacheDelete, CacheKeys } from "@/lib/cache";
 
 // GET /api/admin/settings - Get all settings
 export async function GET() {
@@ -67,6 +68,9 @@ export async function PATCH(req: NextRequest) {
 
       results.push(setting);
     }
+
+    // Invalidate public settings cache
+    await cacheDelete(CacheKeys.publicSettings());
 
     return NextResponse.json({ success: true, updated: results });
   } catch (error) {

@@ -4,7 +4,8 @@
       "WebSearch",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:authjs.dev)"
+      "WebFetch(domain:authjs.dev)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
