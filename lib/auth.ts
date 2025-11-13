@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
             clientSecret: process.env.OAUTH_CLIENT_SECRET,
             authorization: {
               url: process.env.OAUTH_AUTHORIZATION_URL!,
-              params: { scope: "openid email profile user:email" },
+              params: { scope: "read:user user:email" },
             },
             token: process.env.OAUTH_TOKEN_URL!,
             userinfo: process.env.OAUTH_USERINFO_URL!,
