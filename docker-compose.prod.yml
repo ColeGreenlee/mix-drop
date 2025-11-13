@@ -168,6 +168,12 @@ services:
       - OAUTH_TOKEN_URL=${OAUTH_TOKEN_URL}
       - OAUTH_USERINFO_URL=${OAUTH_USERINFO_URL}
 
+      # Admin configuration
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
       # Node environment
       - NODE_ENV=production
     depends_on:
@@ -192,6 +198,41 @@ services:
     labels:
       - "com.docker.compose.project=mix-drop"
 
+  # Caddy - Reverse Proxy with Automatic HTTPS
+  caddy:
+    image: caddy:2-alpine
+    container_name: mixdrop-caddy-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"        # HTTP (auto-redirects to HTTPS)
+      - "443:443"      # HTTPS
+      - "443:443/udp"  # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    environment:
+      - APP_DOMAIN=${APP_DOMAIN}
+      - GRAFANA_DOMAIN=${GRAFANA_DOMAIN}
+      - MINIO_DOMAIN=${MINIO_DOMAIN}
+      - MINIO_CONSOLE_DOMAIN=${MINIO_CONSOLE_DOMAIN}
+      - ACME_EMAIL=${ACME_EMAIL}
+    depends_on:
+      app:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
+
 volumes:
   postgres_data:
     driver: local
@@ -202,6 +243,12 @@ volumes:
   loki_data:
     driver: local
   grafana_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+  caddy_logs:
     driver: local
 
 networks:

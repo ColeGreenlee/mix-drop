@@ -94,20 +94,47 @@ Available image tags:
 ### Prerequisites
 
 **Required:**
-- Domain name with DNS configured
+- Domain name (you'll need 4 subdomains)
+- DNS access to configure A records
 - Production OAuth provider (Keycloak, Auth0, Okta, Google, etc.)
-- AWS S3 account OR other S3-compatible service
-- Server with Docker and Docker Compose
+- AWS S3 account OR use bundled MinIO
+- Server with Docker and Docker Compose installed
 
-**Recommended:**
-- Reverse proxy for HTTPS (Caddy or Nginx)
-- Let's Encrypt for SSL certificate
+**Included:**
+- ✅ Automatic HTTPS with Let's Encrypt (via Caddy reverse proxy)
+- ✅ PostgreSQL database
+- ✅ Redis caching
+- ✅ MinIO S3-compatible storage (optional)
+- ✅ Grafana + Loki observability
 
-### Simple Production Deployment
+### Production Deployment Guide
 
-MixDrop uses a single docker-compose file for production that includes PostgreSQL and Redis.
+MixDrop includes a production-ready Docker Compose configuration with automatic HTTPS via Caddy.
 
-**Step 1: Create Environment File**
+**Step 1: Configure DNS**
+
+Create these DNS A records pointing to your server's IP address:
+
+```
+Type    Name                          Value               TTL
+----    ----                          -----               ---
+A       mixdrop.yourdomain.com        YOUR_SERVER_IP      300
+A       grafana.yourdomain.com        YOUR_SERVER_IP      300
+A       minio.yourdomain.com          YOUR_SERVER_IP      300
+A       console.minio.yourdomain.com  YOUR_SERVER_IP      300
+```
+
+Or use a wildcard (simpler):
+```
+A       *.yourdomain.com              YOUR_SERVER_IP      300
+```
+
+⏱️ **Wait for DNS propagation** (5-30 minutes). Verify with:
+```bash
+dig mixdrop.yourdomain.com +short
+```
+
+**Step 2: Create Environment File**
 
 ```bash
 # Copy and edit with your production values
@@ -115,95 +142,88 @@ cp .env.example .env.production
 ```
 
 Required production environment variables:
-- `POSTGRES_PASSWORD` - Database password (generate with `openssl rand -base64 32`)
-- `REDIS_PASSWORD` - Redis password (generate with `openssl rand -base64 32`)
-- `NEXTAUTH_SECRET` - Session secret (generate with `openssl rand -base64 32`)
-- `NEXTAUTH_URL` - Your public URL (e.g., `https://mixdrop.yourdomain.com`)
-- `OAUTH_*` - Your production OAuth provider credentials
-- `S3_*` - Your production S3 credentials (AWS S3 or other)
-- `GRAFANA_ADMIN_PASSWORD` - Grafana admin password (generate with `openssl rand -base64 32`)
-- `GRAFANA_SECRET_KEY` - Grafana encryption key (generate with `openssl rand -base64 32`)
+- **Domain Configuration:**
+  - `APP_DOMAIN` - Main application domain (e.g., `mixdrop.yourdomain.com`)
+  - `GRAFANA_DOMAIN` - Grafana dashboard domain (e.g., `grafana.yourdomain.com`)
+  - `MINIO_DOMAIN` - MinIO S3 API domain (e.g., `minio.yourdomain.com`)
+  - `MINIO_CONSOLE_DOMAIN` - MinIO console domain (e.g., `console.minio.yourdomain.com`)
+  - `ACME_EMAIL` - Email for Let's Encrypt SSL certificate notifications
+- **Security:**
+  - `POSTGRES_PASSWORD` - Database password (generate with `openssl rand -base64 32`)
+  - `REDIS_PASSWORD` - Redis password (generate with `openssl rand -base64 32`)
+  - `NEXTAUTH_SECRET` - Session secret (generate with `openssl rand -base64 32`)
+  - `GRAFANA_ADMIN_PASSWORD` - Grafana admin password (generate with `openssl rand -base64 32`)
+  - `GRAFANA_SECRET_KEY` - Grafana encryption key (generate with `openssl rand -base64 32`)
+- **Authentication:**
+  - `OAUTH_*` - Your production OAuth provider credentials (6 variables total)
+  - `ADMIN_EMAILS` - Comma-separated admin emails (optional but recommended)
+- **Storage:**
+  - `S3_*` - Your production S3 credentials (AWS S3 or bundled MinIO)
 
-**Step 2: Deploy with Docker Compose**
-
-MixDrop publishes pre-built Docker images to GitHub Container Registry (GHCR) on every commit to main.
+**Step 3: Deploy with Docker Compose**
 
 ```bash
-# Pull the latest image
-docker pull ghcr.io/colegreenlee/mix-drop:latest
-
-# Start all services (PostgreSQL, Redis, App)
+# Start all services with automatic HTTPS
 docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
 
-# Check status
+# Check status (all services should be "healthy")
 docker-compose -f docker-compose.prod.yml ps
 
 # View logs
 docker-compose -f docker-compose.prod.yml logs -f app
+docker-compose -f docker-compose.prod.yml logs -f caddy  # Check SSL certificate generation
 ```
 
-**Alternative: Build locally** (if you want to customize the image):
-```bash
-# Edit docker-compose.prod.yml and uncomment the build section
-docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-```
+**Step 4: Verify Deployment**
 
-**Step 3: Set Up Reverse Proxy for HTTPS**
+1. **Check SSL Certificates** (may take 1-2 minutes):
+   ```bash
+   # Watch Caddy obtain Let's Encrypt certificates
+   docker-compose -f docker-compose.prod.yml logs -f caddy
+   # Look for "certificate obtained successfully"
+   ```
 
-The app runs on `localhost:3000` by default. Use a reverse proxy to handle HTTPS:
+2. **Access Your Services**:
+   - Main App: `https://mixdrop.yourdomain.com`
+   - Grafana: `https://grafana.yourdomain.com`
+   - MinIO Console: `https://console.minio.yourdomain.com`
 
-**Option A: Caddy (Easiest - Auto SSL)**
+3. **Sign In**:
+   - Click "Sign In with SSO"
+   - First user automatically becomes admin
+   - OR: User with email in `ADMIN_EMAILS` becomes admin
 
-```bash
-# Install Caddy
-# https://caddyserver.com/docs/install
+4. **Verify HTTPS**:
+   ```bash
+   curl -I https://mixdrop.yourdomain.com
+   # Should return HTTP/2 200 with valid SSL
+   ```
 
-# Create Caddyfile
-cat > Caddyfile <<EOF
-mixdrop.yourdomain.com {
-    reverse_proxy localhost:3000
-}
-EOF
+**Deployed Services:**
 
-# Start Caddy (automatically gets Let's Encrypt cert)
-caddy run
-```
+| Service | URL | Purpose | Credentials |
+|---------|-----|---------|-------------|
+| MixDrop App | `https://mixdrop.yourdomain.com` | Main application | OAuth SSO |
+| Grafana | `https://grafana.yourdomain.com` | Observability dashboards | `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` |
+| MinIO API | `https://minio.yourdomain.com` | S3-compatible storage | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` |
+| MinIO Console | `https://console.minio.yourdomain.com` | Storage management UI | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` |
 
-**Option B: Nginx with Certbot**
+**Troubleshooting:**
 
-```bash
-# Install nginx and certbot
-sudo apt install nginx certbot python3-certbot-nginx
+- **SSL Certificate Errors**: Ensure DNS is propagated (`dig` command). Caddy needs to reach your server on port 80/443.
+- **"Connection Refused"**: Check firewall allows ports 80 and 443: `sudo ufw allow 80/tcp && sudo ufw allow 443/tcp`
+- **OAuth Callback Failed**: Verify `NEXTAUTH_URL` matches `APP_DOMAIN` in .env.production
+- **Admin Not Working**: Check `ADMIN_EMAILS` or ensure you're the first user to sign in
+- **View All Logs**: `docker-compose -f docker-compose.prod.yml logs`
 
-# Create nginx config
-sudo nano /etc/nginx/sites-available/mixdrop
+**Security Hardening (Optional):**
 
-# Add this config:
-server {
-    listen 80;
-    server_name mixdrop.yourdomain.com;
+1. **IP Whitelist Admin Services**: Edit `Caddyfile` to restrict Grafana/MinIO Console to specific IPs
+2. **Firewall**: Only allow ports 22 (SSH), 80 (HTTP), 443 (HTTPS)
+3. **Regular Updates**: `docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d`
+4. **Backups**: Regular backups of PostgreSQL database and S3 storage
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-
-# Enable site
-sudo ln -s /etc/nginx/sites-available/mixdrop /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-
-# Get SSL certificate
-sudo certbot --nginx -d mixdrop.yourdomain.com
-```
-
-**That's it!** Your production instance is now running.
+**That's it!** Your production instance is now running with automatic HTTPS via Caddy.
 
 ### Complete Reference
 
@@ -231,6 +251,32 @@ sudo certbot --nginx -d mixdrop.yourdomain.com
 | `GRAFANA_ADMIN_USER` | ❌ | `admin` | Grafana admin username |
 | `GRAFANA_SECRET_KEY` | ✅ (prod) | Auto-generated | Grafana encryption secret |
 | `GRAFANA_ROOT_URL` | ❌ | `http://localhost:3001` | Public URL for Grafana (if exposed) |
+| `APP_DOMAIN` | ✅ (prod) | N/A | Main application domain (e.g., `mixdrop.yourdomain.com`) |
+| `GRAFANA_DOMAIN` | ✅ (prod) | N/A | Grafana dashboard domain (e.g., `grafana.yourdomain.com`) |
+| `MINIO_DOMAIN` | ✅ (prod) | N/A | MinIO S3 API domain (e.g., `minio.yourdomain.com`) |
+| `MINIO_CONSOLE_DOMAIN` | ✅ (prod) | N/A | MinIO console domain (e.g., `console.minio.yourdomain.com`) |
+| `ACME_EMAIL` | ✅ (prod) | N/A | Email for Let's Encrypt SSL certificate notifications |
+| `ADMIN_EMAILS` | ⚠️ | First user becomes admin | Comma-separated emails that automatically receive admin role |
+
+### Admin User Management
+
+MixDrop assigns admin roles automatically through OAuth:
+
+**1. ADMIN_EMAILS Environment Variable (Recommended)**
+```bash
+ADMIN_EMAILS=admin@example.com,other-admin@example.com
+```
+Users with these email addresses automatically receive admin role when they first sign in via OAuth.
+
+**2. First User Fallback**
+If no `ADMIN_EMAILS` is configured, the very first user to sign in becomes admin automatically.
+
+**3. Manual Promotion**
+After deployment, existing admins can promote other users through the admin panel at `/admin/users`.
+
+**Best Practice:** Set `ADMIN_EMAILS` before first deployment to ensure correct admin designation from the start.
+
+**Important:** Admin roles are stored in the database. Removing an email from `ADMIN_EMAILS` after a user signs in does NOT revoke their admin role.
 
 ### OAuth Provider Setup
 
