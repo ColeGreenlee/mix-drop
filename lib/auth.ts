@@ -1,7 +1,5 @@
 import { NextAuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
 import { Adapter } from "next-auth/adapters";
 import { logError, logAuth } from "@/lib/logger";
@@ -18,58 +16,7 @@ interface OAuthProfile {
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
-    // Local credentials authentication (enabled in development)
-    ...(process.env.ENABLE_LOCAL_AUTH === "true"
-      ? [
-          CredentialsProvider({
-            id: "credentials",
-            name: "Local Account",
-            credentials: {
-              username: { label: "Username or Email", type: "text", placeholder: "admin" },
-              password: { label: "Password", type: "password" },
-            },
-            async authorize(credentials) {
-              if (!credentials?.username || !credentials?.password) {
-                return null;
-              }
-
-              // Find user by email or username
-              const user = await prisma.user.findFirst({
-                where: {
-                  OR: [
-                    { email: credentials.username },
-                    { username: credentials.username },
-                  ],
-                },
-              });
-
-              if (!user || !user.hashedPassword) {
-                return null; // User not found or OAuth-only user
-              }
-
-              // Verify password
-              const isValid = await bcrypt.compare(
-                credentials.password,
-                user.hashedPassword
-              );
-
-              if (!isValid) {
-                return null;
-              }
-
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-              };
-            },
-          }),
-        ]
-      : []),
-
-    // OAuth SSO provider (enabled for local dev with mock OAuth, and production)
-    // Will be available alongside local credentials when both are enabled
+    // OAuth SSO provider (required for authentication)
     ...(process.env.OAUTH_CLIENT_ID && process.env.OAUTH_CLIENT_SECRET
       ? [
           {
@@ -108,28 +55,11 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      // Initial sign in
+    async session({ session, user }) {
+      // Add user id and role to session (user comes from database)
       if (user) {
-        token.id = user.id;
-        token.role = user.role || "user";
-        token.status = (user as { status?: string }).status || "active";
-
-        // Update last login time
-        prisma.user
-          .update({
-            where: { id: user.id },
-            data: { lastLoginAt: new Date() },
-          })
-          .then(() => logAuth('jwt_created', user.id))
-          .catch((err) => logError(err, { auth: { event: 'update_lastLoginAt', userId: user.id } }));
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.id = user.id;
+        session.user.role = (user as { role?: string }).role || "user";
       }
       return session;
     },
@@ -153,6 +83,15 @@ export const authOptions: NextAuthOptions = {
         });
       }
 
+      // Update last login time
+      prisma.user
+        .update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        })
+        .then(() => logAuth('login', user.id))
+        .catch((err) => logError(err, { auth: { event: 'update_lastLoginAt', userId: user.id } }));
+
       return true;
     },
   },
@@ -161,7 +100,7 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   session: {
-    strategy: "jwt", // Required for CredentialsProvider
+    strategy: "database", // OAuth supports database sessions for better security
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 };

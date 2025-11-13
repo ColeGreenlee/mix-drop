@@ -9,9 +9,7 @@ import type { User, Mix, Playlist, PlaylistMix } from "@prisma/client";
 export const createMockUser = (overrides?: Partial<User>): User => ({
   id: faker.string.uuid(),
   email: faker.internet.email(),
-  username: faker.internet.username(),
   name: faker.person.fullName(),
-  hashedPassword: faker.string.alphanumeric(60),
   image: faker.image.avatar(),
   role: "user",
   status: "active",

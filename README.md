@@ -87,7 +87,7 @@ Available image tags:
    - MinIO Console: http://localhost:9001
    - Mock OAuth: http://localhost:8080/default/.well-known/openid-configuration
 
-3. **Sign in** - Click "Sign In" and enter any email/username (mock OAuth accepts anything)
+3. **Sign in** - Click "Sign In" button to use OAuth (mock OAuth accepts any credentials)
 
 ## Production Deployment
 

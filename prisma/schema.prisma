@@ -44,8 +44,6 @@ model User {
   email          String?   @unique
   emailVerified  DateTime?
   image          String?
-  username       String?   @unique // For local auth (optional)
-  hashedPassword String? // For local auth (nullable for OAuth users)
   role           String    @default("user") // "user" or "admin"
   status         String    @default("active") // "active", "suspended", "banned"
   lastLoginAt    DateTime?

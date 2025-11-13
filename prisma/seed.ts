@@ -1,35 +1,34 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding database...");
-
-  // Create default admin user for local development
-  const hashedPassword = await bcrypt.hash("admin", 12);
-
-  await prisma.user.upsert({
-    where: { email: "admin@mixdrop.local" },
-    update: {}, // Don't update if already exists
-    create: {
-      email: "admin@mixdrop.local",
-      username: "admin",
-      name: "Default Admin",
-      hashedPassword: hashedPassword,
-      role: "admin",
-      status: "active",
-      emailVerified: new Date(),
-    },
-  });
-
-  console.log("✅ Created default admin user:");
-  console.log("   Email:    admin@mixdrop.local");
-  console.log("   Username: admin");
-  console.log("   Password: admin");
-  console.log("   Role:     admin");
   console.log("");
-  console.log("⚠️  Change the default password in production!");
+  console.log("ℹ️  MixDrop uses OAuth-only authentication.");
+  console.log("");
+  console.log("📝 To designate admin users:");
+  console.log("   1. Set ADMIN_EMAILS environment variable with comma-separated emails");
+  console.log("      Example: ADMIN_EMAILS=admin@example.com,other@example.com");
+  console.log("");
+  console.log("   2. OR: The first user to log in will automatically become admin");
+  console.log("");
+  console.log("🔑 Ensure your OAuth provider is configured with:");
+  console.log("   - OAUTH_CLIENT_ID");
+  console.log("   - OAUTH_CLIENT_SECRET");
+  console.log("   - OAUTH_ISSUER");
+  console.log("   - OAUTH_AUTHORIZATION_URL");
+  console.log("   - OAUTH_TOKEN_URL");
+  console.log("   - OAUTH_USERINFO_URL");
+  console.log("");
+
+  // Add any additional seed data here (e.g., default site settings)
+  // Example:
+  // await prisma.siteSetting.upsert({
+  //   where: { key: "site_name" },
+  //   update: {},
+  //   create: { key: "site_name", value: "MixDrop" },
+  // });
 }
 
 main()

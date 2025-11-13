@@ -42,7 +42,6 @@ This guide explains the critical architecture, design patterns, and implementati
 
 **Key Libraries:**
 - music-metadata - Extract audio duration and metadata
-- bcrypt - Password hashing for local credentials
 - pino - Structured JSON logging
 - @dnd-kit/* - Drag-and-drop playlist reordering
 
@@ -51,23 +50,36 @@ This guide explains the critical architecture, design patterns, and implementati
 
 ### NextAuth.js Configuration (lib/auth.ts)
 
-MixDrop supports dual authentication modes:
-1. **Local Credentials** (development) - Username/password via CredentialsProvider
-2. **OAuth SSO** (production) - Custom OAuth provider integration
+MixDrop uses **OAuth-only authentication** via NextAuth.js v4 with a custom OAuth provider integration.
 
-### Why JWT Sessions?
+### Database Sessions
 
 ```typescript
-session: { strategy: "jwt" } // Required for CredentialsProvider
+session: { strategy: "database" } // OAuth supports database sessions
 ```
 
-**Critical:** CredentialsProvider REQUIRES JWT sessions because there's no persistent session table. OAuth-only apps can use database sessions, but this app must use JWT to support both auth modes.
+**Benefits of database sessions:**
+- Can invalidate sessions server-side (better security)
+- No JWT size limitations
+- More control over session lifecycle
+- Audit trail of active sessions
 
-### Admin Designation (Three Methods)
+### OAuth Provider Configuration
 
-1. **Environment Variable:** ADMIN_EMAILS=admin@example.com - Users with these emails get admin role
-2. **First User Fallback:** First user automatically becomes admin
-3. **Manual Seeding:** pnpm db:seed creates admin@mixdrop.local / admin
+The OAuth provider is configured in `lib/auth.ts` with the following environment variables:
+- `OAUTH_CLIENT_ID` - OAuth client identifier
+- `OAUTH_CLIENT_SECRET` - OAuth client secret
+- `OAUTH_ISSUER` - OAuth issuer URL (optional, for OIDC discovery)
+- `OAUTH_AUTHORIZATION_URL` - Authorization endpoint
+- `OAUTH_TOKEN_URL` - Token endpoint
+- `OAUTH_USERINFO_URL` - User info endpoint
+
+For local development, a mock OAuth server is provided via Docker Compose that accepts any credentials.
+
+### Admin Designation (Two Methods)
+
+1. **Environment Variable:** `ADMIN_EMAILS=admin@example.com,other@example.com` - Users with these emails automatically get admin role on first sign-in
+2. **First User Fallback:** First user to sign in automatically becomes admin (fallback if ADMIN_EMAILS not set)
 
 ### Route Protection Patterns
 
@@ -239,12 +251,11 @@ Without replacement, browsers would try to fetch from http://minio:9000 (Docker 
 **Key Models:**
 
 ```prisma
-User (NextAuth + Local Auth)
+User (NextAuth OAuth)
 ├── id, email, name, image, emailVerified
-├── username, hashedPassword (for local auth)
 ├── role ("user" | "admin")
 ├── status ("active" | "suspended" | "banned")
-└── Relations: mixes, playlists, auditLogs
+└── Relations: mixes, playlists, auditLogs, sessions, accounts
 
 Mix (core content)
 ├── title, artist, description, duration, fileSize
@@ -543,17 +554,13 @@ NEXTAUTH_URL, NEXTAUTH_SECRET  # Generate: openssl rand -base64 32
 
 **Authentication:**
 ```bash
-# Local credentials (dev)
-ENABLE_LOCAL_AUTH=true
-NEXT_PUBLIC_ENABLE_LOCAL_AUTH=true
-
-# OAuth SSO (prod)
+# OAuth SSO (required)
 OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET
 OAUTH_ISSUER, OAUTH_AUTHORIZATION_URL
 OAUTH_TOKEN_URL, OAUTH_USERINFO_URL
 
 # Admin designation
-ADMIN_EMAILS=admin@example.com
+ADMIN_EMAILS=admin@example.com,other-admin@example.com
 ```
 
 ### Build Process
@@ -581,31 +588,32 @@ pnpm prisma studio          # Visual editor
 
 ## Critical Implementation Details
 
-### 1. Why JWT Sessions?
+### 1. Database Sessions for OAuth
 
 ```typescript
-session: { strategy: "jwt" } // Required for CredentialsProvider
+session: { strategy: "database" } // OAuth supports database sessions
 ```
 
-NextAuth's CredentialsProvider does NOT support database sessions because:
-- No way to persist session on sign-in
-- JWT is self-contained, doesn't require DB lookups
-- OAuth can use DB sessions, but credentials cannot
+MixDrop uses database sessions because:
+- Can invalidate sessions server-side (logout functionality)
+- No JWT size limitations
+- Full audit trail of active sessions via Session table
+- Better security for multi-device management
 
-**Implication:** Session data in encrypted JWT cookie, not database. To invalidate, must wait for expiry or implement token blacklist.
+**Implication:** Session data stored in database Session table. Can be invalidated immediately by deleting the session record.
 
-### 2. Why OAuth Providers Are Commented Out
+### 2. OAuth Provider Configuration
 
-**Location:** lib/auth.ts (lines 62-97)
+**Location:** lib/auth.ts
 
-- Development: Uses local credentials (username/password)
-- Production: Uncomment OAuth provider, configure with real SSO
-- Controlled by: ENABLE_LOCAL_AUTH=true
+OAuth provider is configured for both development and production:
+- **Development:** Mock OAuth server (via Docker Compose) accepts any credentials
+- **Production:** Configure with your actual OAuth/OIDC provider (Auth0, Keycloak, Google, etc.)
 
-To enable OAuth:
-1. Uncomment provider in lib/auth.ts
-2. Configure OAuth env vars
-3. Set ENABLE_LOCAL_AUTH=false (optional)
+Required OAuth environment variables:
+1. `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET`
+2. `OAUTH_AUTHORIZATION_URL`, `OAUTH_TOKEN_URL`, `OAUTH_USERINFO_URL`
+3. Optional: `OAUTH_ISSUER` for OIDC discovery
 
 ### 3. Waveform Precomputation Details
 
@@ -723,16 +731,16 @@ logError(error, { context: "upload", mixId });
 ### Architecture Decisions Summary
 
 **Key Choices:**
-1. JWT Sessions - Required by CredentialsProvider
+1. Database Sessions - Better security and control for OAuth
 2. Precomputed Waveforms - CPU-intensive, done during upload
 3. Cache-Aside Pattern - Graceful degradation
 4. Layout-Based Auth - Admin sections protected at layout level
 5. Structured Logging - JSON with context for Loki
-6. Dual Auth Modes - Local (dev) + OAuth (prod)
+6. OAuth-Only Authentication - Industry standard SSO
 7. Standalone Build - Docker optimization
 
 **Trade-offs:**
-- JWT sessions stateless (can't invalidate until expiry)
+- Database sessions require DB queries (minimal overhead with proper indexing)
 - Waveform algorithm is placeholder (needs production solution)
 - Rate limiting depends on Redis (fails open if unavailable)
 
@@ -748,7 +756,8 @@ logError(error, { context: "upload", mixId });
 - "Prisma Client not found" → pnpm prisma generate
 - "Redis connection failed" → Check container running
 - "S3 access denied" → Verify S3_ACCESS_KEY/SECRET_KEY
-- "Admin not working" → Check ADMIN_EMAILS or run pnpm db:seed
+- "Admin not working" → Check ADMIN_EMAILS environment variable, or ensure first user has signed in
+- "OAuth callback failed" → Verify OAuth environment variables and provider configuration
 - "Waveform not showing" → Verify waveformPeaks is valid JSON
 
 ---
@@ -934,7 +943,7 @@ expect(result.current.currentMix).toEqual(mix);
 ## Summary
 
 MixDrop is a Next.js 15 application with:
-- **Dual auth:** Local credentials (dev) + OAuth SSO (prod)
+- **OAuth authentication:** Industry-standard SSO with database sessions
 - **Persistent player:** Global audio state survives navigation
 - **Redis caching:** Graceful degradation, authentication-aware
 - **S3 storage:** MinIO (dev) or AWS S3 (prod) with endpoint translation

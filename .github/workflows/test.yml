@@ -55,7 +55,6 @@ jobs:
           S3_SECRET_KEY: test-secret-key
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: test-secret-key-for-ci
-          ENABLE_LOCAL_AUTH: true
           NODE_ENV: test
         run: pnpm test:coverage
 
