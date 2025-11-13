@@ -1,0 +1,38 @@
+# Dex OIDC Provider Configuration for Local Development
+
+issuer: http://localhost:5556/dex
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+# Static OAuth clients
+staticClients:
+  - id: mixdrop
+    redirectURIs:
+      - 'http://localhost:3000/api/auth/callback/custom-sso'
+    name: 'MixDrop Local Dev'
+    secret: mixdrop-secret
+
+# Enable password authentication with static users
+enablePasswordDB: true
+
+# Static users for testing
+staticPasswords:
+  - email: "admin@mixdrop.local"
+    # Password: "password" (bcrypt hash)
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: "admin"
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+
+  - email: "user@mixdrop.local"
+    # Password: "password" (bcrypt hash)
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: "user"
+    userID: "41331323-6f44-45e6-b3b9-2c4b60c02be5"
+
+# OAuth2 configuration
+oauth2:
+  skipApprovalScreen: true  # Auto-approve for local dev

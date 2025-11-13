@@ -27,7 +27,10 @@ export const authOptions: NextAuthOptions = {
             clientSecret: process.env.OAUTH_CLIENT_SECRET,
             authorization: {
               url: process.env.OAUTH_AUTHORIZATION_URL!,
-              params: { scope: "read:user user:email" },
+              params: {
+                // Use OAUTH_SCOPE env var, fallback to GitHub scopes for production
+                scope: process.env.OAUTH_SCOPE || "read:user user:email"
+              },
             },
             token: process.env.OAUTH_TOKEN_URL!,
             userinfo: process.env.OAUTH_USERINFO_URL!,
